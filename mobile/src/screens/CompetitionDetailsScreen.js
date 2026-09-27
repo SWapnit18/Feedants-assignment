@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -121,6 +121,12 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 4000);
   };
+
+  useEffect(() => {
+    if (route?.params?.openSubmission) {
+      setSubmissionModalVisible(true);
+    }
+  }, [route?.params?.openSubmission]);
 
   const serverOffsetMs = useMemo(
     () => (competition?.dates?.serverTime ? computeServerOffsetMs(competition.dates.serverTime) : 0),

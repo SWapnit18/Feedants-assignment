@@ -50,8 +50,21 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.cardDesc}>Showcase your classical dance skills to win from ₹1,500 prize pool.</Text>
           <View style={styles.cardFooter}>
             <Text style={styles.prizeText}>Prize Pool: ₹1,500</Text>
-            <View style={styles.viewBtn}>
-              <Text style={styles.viewBtnText}>View Details →</Text>
+            <View style={{ flexDirection: 'row', gap: spacing(2) }}>
+              <TouchableOpacity
+                style={styles.uploadBtn}
+                onPress={() => navigation?.navigate('CompetitionDetails', { openSubmission: true })}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.uploadBtnText}>Upload Video 🎥</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.viewBtn}
+                onPress={() => navigation?.navigate('CompetitionDetails')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.viewBtnText}>View Details →</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </TouchableOpacity>
@@ -63,7 +76,13 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity
               key={idx}
               style={styles.categoryCard}
-              onPress={() => navigation?.navigate('Explore')}
+              onPress={() => {
+                if (item === 'Classical Dance') {
+                  navigation?.navigate('CompetitionDetails');
+                } else {
+                  navigation?.navigate('Explore');
+                }
+              }}
               activeOpacity={0.7}
             >
               <Text style={styles.categoryName}>{item}</Text>
@@ -186,6 +205,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     color: colors.primary,
+  },
+  uploadBtn: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: spacing(3),
+    paddingVertical: spacing(1.5),
+    borderRadius: radius.pill,
+  },
+  uploadBtnText: {
+    color: '#047857',
+    fontSize: 12,
+    fontWeight: '700',
   },
   viewBtn: {
     backgroundColor: '#075A4E',
