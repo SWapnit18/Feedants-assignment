@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
   const [currentStep, setCurrentStep] = useState(1);
   const [performanceTitle, setPerformanceTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState({
     name: 'classical_dance_solo_2026.mp4',
     size: '48.2 MB',
@@ -37,7 +38,18 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
     isUserUploaded: false,
   });
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(null);
+  const scrollViewRef = useRef(null);
+
+  const goToStep = (stepNumber) => {
+    setCurrentStep(stepNumber);
+    if (stepNumber === 1) {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    } else if (stepNumber === 2) {
+      scrollViewRef.current?.scrollTo({ y: 350, animated: true });
+    } else if (stepNumber === 3) {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }
+  };
 
   // File selection handler supporting Web file input, drag & drop, and Expo DocumentPicker
   const handleChooseVideo = async () => {
@@ -73,7 +85,7 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
             isUserUploaded: true,
           });
           setIsPlayingPreview(true);
-          setCurrentStep(2);
+          goToStep(2);
           if (!performanceTitle) {
             setPerformanceTitle(cleanName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
           }
@@ -98,7 +110,23 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
       isUserUploaded: true,
     });
     setIsPlayingPreview(true);
-    setCurrentStep(2);
+    goToStep(2);
+
+    // Extract exact video duration on web
+    if (typeof document !== 'undefined') {
+      const probe = document.createElement('video');
+      probe.preload = 'metadata';
+      probe.src = objectUrl;
+      probe.onloadedmetadata = () => {
+        const sec = Math.round(probe.duration);
+        if (sec && !isNaN(sec)) {
+          const m = Math.floor(sec / 60);
+          const s = sec % 60;
+          const formatted = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+          setSelectedVideo((prev) => ({ ...prev, duration: formatted }));
+        }
+      };
+    }
 
     if (!performanceTitle) {
       setPerformanceTitle(cleanName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
@@ -139,6 +167,7 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
         </View>
 
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -151,7 +180,7 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
             {/* Step 1 */}
             <TouchableOpacity
               style={styles.stepItem}
-              onPress={() => setCurrentStep(1)}
+              onPress={() => goToStep(1)}
               activeOpacity={0.8}
             >
               <View style={[styles.stepCircle, currentStep >= 1 && styles.stepCircleActive]}>
@@ -169,7 +198,7 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
             {/* Step 2 */}
             <TouchableOpacity
               style={styles.stepItem}
-              onPress={() => setCurrentStep(2)}
+              onPress={() => goToStep(2)}
               activeOpacity={0.8}
             >
               <View style={[styles.stepCircle, currentStep >= 2 && styles.stepCircleActive]}>
@@ -187,7 +216,7 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
             {/* Step 3 */}
             <TouchableOpacity
               style={styles.stepItem}
-              onPress={() => setCurrentStep(3)}
+              onPress={() => goToStep(3)}
               activeOpacity={0.8}
             >
               <View style={[styles.stepCircle, currentStep >= 3 && styles.stepCircleActive]}>
@@ -203,9 +232,33 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
 
           {/* Upload Performance Video Area / Dropzone */}
           <TouchableOpacity
-            style={[styles.dropzoneCard, selectedVideo.isUserUploaded && styles.dropzoneCardSuccess]}
+            style={[
+              styles.dropzoneCard,
+              selectedVideo.isUserUploaded && styles.dropzoneCardSuccess,
+              isDragging && styles.dropzoneCardDragging,
+            ]}
             onPress={handleChooseVideo}
             activeOpacity={0.85}
+            {...(Platform.OS === 'web'
+              ? {
+                  onDragOver: (e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  },
+                  onDragLeave: (e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                  },
+                  onDrop: (e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    const file = e.nativeEvent?.dataTransfer?.files?.[0] || e.dataTransfer?.files?.[0];
+                    if (file) {
+                      processSelectedFile(file);
+                    }
+                  },
+                }
+              : {})}
           >
             <View style={styles.cloudIconContainer}>
               <CloudUploadOutlineIcon size={28} color="#0284C7" />
@@ -270,6 +323,15 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
                 useNativeControls
                 resizeMode="contain"
                 shouldPlay={false}
+                onPlaybackStatusUpdate={(status) => {
+                  if (status.isLoaded && status.durationMillis && selectedVideo.duration === '03:30') {
+                    const sec = Math.round(status.durationMillis / 1000);
+                    const m = Math.floor(sec / 60);
+                    const s = sec % 60;
+                    const formatted = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                    setSelectedVideo((prev) => ({ ...prev, duration: formatted }));
+                  }
+                }}
               />
             ) : (
               <TouchableOpacity
@@ -479,6 +541,11 @@ const styles = StyleSheet.create({
   dropzoneCardSuccess: {
     borderColor: '#0F766E',
     backgroundColor: '#E6F7F4',
+  },
+  dropzoneCardDragging: {
+    borderColor: '#0F766E',
+    borderWidth: 2,
+    backgroundColor: '#CCFBF1',
   },
   cloudIconContainer: {
     width: 52,

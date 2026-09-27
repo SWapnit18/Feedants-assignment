@@ -160,6 +160,9 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         mediaType: submissionData.mediaType,
         title: submissionData.title,
         description: submissionData.description,
+        file: submissionData.file,
+        duration: submissionData.duration,
+        videoName: submissionData.videoName,
       });
       setSubmissionModalVisible(false);
       showToast('🌟 Entry Submitted! Your performance was sent for judging.');
