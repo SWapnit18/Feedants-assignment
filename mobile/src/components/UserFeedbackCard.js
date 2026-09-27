@@ -38,6 +38,7 @@ const TESTIMONIALS = [
 ];
 
 export default function UserFeedbackCard({ onOpenAll }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const handlePrev = () => {
@@ -52,54 +53,64 @@ export default function UserFeedbackCard({ onOpenAll }) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Testimonials</Text>
-        <TouchableOpacity onPress={onOpenAll} activeOpacity={0.7}>
-          <Text style={styles.viewAllText}>View All</Text>
-        </TouchableOpacity>
-      </View>
+      {/* 1. Main Collapsed Row matching the exact screenshot */}
+      <TouchableOpacity
+        style={styles.bannerRow}
+        onPress={() => setIsExpanded((v) => !v)}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.chatIcon}>💬</Text>
+        <View style={styles.bannerTextGroup}>
+          <Text style={styles.bannerTitle}>Hear From Our Users</Text>
+          <Text style={styles.bannerSubtitle}>See what participants say about Feedants</Text>
+        </View>
+        <Text style={styles.arrowIcon}>{isExpanded ? '⌃' : '›'}</Text>
+      </TouchableOpacity>
 
-      {/* Testimonial Card with Left/Right Arrows */}
-      <View style={styles.card}>
-        <TouchableOpacity
-          style={styles.navArrowBtn}
-          onPress={handlePrev}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.navArrowText}>‹</Text>
-        </TouchableOpacity>
+      {/* 2. Expanded Carousel */}
+      {isExpanded && (
+        <View style={styles.expandedWrapper}>
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.navArrowBtn}
+              onPress={handlePrev}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.navArrowText}>‹</Text>
+            </TouchableOpacity>
 
-        <View style={styles.contentCol}>
-          <View style={styles.quoteRow}>
-            <Image source={{ uri: current.avatar }} style={styles.avatar} />
-            <View style={styles.textGroup}>
-              <Text style={styles.quoteText}>"{current.quote}"</Text>
-              <Text style={styles.authorText}>{current.author}</Text>
-              <Text style={styles.subtitleText}>{current.subtitle}</Text>
+            <View style={styles.contentCol}>
+              <View style={styles.quoteRow}>
+                <Image source={{ uri: current.avatar }} style={styles.avatar} />
+                <View style={styles.textGroup}>
+                  <Text style={styles.quoteText}>"{current.quote}"</Text>
+                  <Text style={styles.authorText}>{current.author}</Text>
+                  <Text style={styles.subtitleText}>{current.subtitle}</Text>
+                </View>
+              </View>
             </View>
+
+            <TouchableOpacity
+              style={styles.navArrowBtn}
+              onPress={handleNext}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.navArrowText}>›</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Pagination Dots */}
+          <View style={styles.paginationDots}>
+            {TESTIMONIALS.map((_, idx) => (
+              <TouchableOpacity
+                key={idx}
+                onPress={() => setCurrentIndex(idx)}
+                style={[styles.dot, idx === currentIndex && styles.dotActive]}
+              />
+            ))}
           </View>
         </View>
-
-        <TouchableOpacity
-          style={styles.navArrowBtn}
-          onPress={handleNext}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.navArrowText}>›</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Pagination Dots */}
-      <View style={styles.paginationDots}>
-        {TESTIMONIALS.map((_, idx) => (
-          <TouchableOpacity
-            key={idx}
-            onPress={() => setCurrentIndex(idx)}
-            style={[styles.dot, idx === currentIndex && styles.dotActive]}
-          />
-        ))}
-      </View>
+      )}
     </View>
   );
 }
@@ -107,23 +118,48 @@ export default function UserFeedbackCard({ onOpenAll }) {
 const styles = StyleSheet.create({
   container: {
     marginTop: spacing(3),
-    paddingHorizontal: spacing(4),
+    marginHorizontal: spacing(4),
   },
-  header: {
+  bannerRow: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: spacing(3.5),
+    paddingVertical: spacing(3),
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing(2),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  title: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: colors.text,
+  chatIcon: {
+    fontSize: 18,
+    marginRight: spacing(3),
   },
-  viewAllText: {
-    fontSize: 11.5,
+  bannerTextGroup: {
+    flex: 1,
+  },
+  bannerTitle: {
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#0F766E',
+    color: '#0F172A',
+  },
+  bannerSubtitle: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  arrowIcon: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#94A3B8',
+    marginLeft: spacing(2),
+  },
+  expandedWrapper: {
+    marginTop: spacing(2.5),
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -134,58 +170,53 @@ const styles = StyleSheet.create({
     paddingVertical: spacing(3),
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
   },
   navArrowBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
   navArrowText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.textSecondary,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   contentCol: {
     flex: 1,
-    paddingHorizontal: spacing(2.5),
+    paddingHorizontal: spacing(2),
   },
   quoteRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: spacing(2.5),
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: spacing(2),
     backgroundColor: '#E2E8F0',
   },
   textGroup: {
     flex: 1,
   },
   quoteText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontStyle: 'italic',
     color: colors.textSecondary,
-    lineHeight: 16,
-    marginBottom: 4,
+    lineHeight: 15,
+    marginBottom: 3,
   },
   authorText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
     color: colors.text,
   },
   subtitleText: {
-    fontSize: 10.5,
+    fontSize: 10,
     color: colors.textMuted,
   },
   paginationDots: {

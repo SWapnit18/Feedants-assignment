@@ -29,25 +29,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-video",
-      "expo-image",
-      "expo-font",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#F7F9F9",
-          "image": "./assets/splash-icon.png",
-          "imageWidth": 160
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Feedants needs access to your photos and videos so you can upload your competition entry."
-        }
-      ]
-    ],
     "scheme": "feedants"
   }
 }

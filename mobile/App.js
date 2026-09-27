@@ -1,7 +1,8 @@
 import React from 'react';
+import { View, StyleSheet, Platform } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import CompetitionDetailsScreen from './src/screens/CompetitionDetailsScreen';
+import CompetitionDetailsScreen from './src/screens/CompetitionDetailsScreen.js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -9,19 +10,31 @@ const queryClient = new QueryClient({
   },
 });
 
-// Reference app entry: in a real app this competitionId comes from
-// navigation params (e.g. tapping a competition card on the list screen).
-const DEMO_COMPETITION_ID = '6ab90c66d8bb4a814e559a4b';
-
 export default function App() {
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={styles.root}>
       <QueryClientProvider client={queryClient}>
-        <CompetitionDetailsScreen
-          route={{ params: { competitionId: DEMO_COMPETITION_ID } }}
-          navigation={{ goBack: () => {}, navigate: () => {} }}
-        />
+        <View style={styles.wrapper}>
+          <CompetitionDetailsScreen
+            route={{ params: {} }}
+            navigation={{ goBack: () => {}, navigate: () => {} }}
+          />
+        </View>
       </QueryClientProvider>
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    ...(Platform.OS === 'web' ? { minHeight: '100vh', height: '100vh', width: '100vw' } : {}),
+  },
+  wrapper: {
+    flex: 1,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    ...(Platform.OS === 'web' ? { minHeight: '100vh', width: '100%' } : {}),
+  },
+});
