@@ -1,6 +1,6 @@
 const express = require('express');
 const { param } = require('express-validator');
-const { getCompetitions, getCompetitionDetails, getPreviousWinners } = require('../controllers/competitionController');
+const { getCompetitions, getCompetitionDetails, getPreviousWinners, getReviews } = require('../controllers/competitionController');
 const { optionalAuth } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 
@@ -20,6 +20,12 @@ router.get(
   '/:id/winners',
   validate([param('id').isMongoId()]),
   getPreviousWinners
+);
+
+router.get(
+  '/:id/reviews',
+  validate([param('id').isMongoId()]),
+  getReviews
 );
 
 module.exports = router;
