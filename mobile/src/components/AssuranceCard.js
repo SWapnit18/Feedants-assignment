@@ -3,7 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { Video } from 'expo-av';
 import { colors, radius, spacing } from '../theme';
 
-export default function AssuranceCard({ videoUrl, onOpenPolicy }) {
+import { t } from '../utils/i18n';
+
+export default function AssuranceCard({ videoUrl, onOpenPolicy, lang = 'ENG' }) {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
 
   return (
@@ -18,8 +20,8 @@ export default function AssuranceCard({ videoUrl, onOpenPolicy }) {
           <Text style={styles.playIcon}>▶</Text>
         </View>
         <View style={styles.leftTextGroup}>
-          <Text style={styles.heading}>How will you receive prize money?</Text>
-          <Text style={styles.subheading}>Watch video to know more</Text>
+          <Text style={styles.heading}>{t(lang, 'prizeMoneyQuery')}</Text>
+          <Text style={styles.subheading}>{t(lang, 'watchVideoPrompt')}</Text>
         </View>
       </TouchableOpacity>
 
@@ -33,7 +35,7 @@ export default function AssuranceCard({ videoUrl, onOpenPolicy }) {
           activeOpacity={0.7}
         >
           <Text style={styles.shieldIcon}>🛡️</Text>
-          <Text style={styles.policyText}>Refund policy</Text>
+          <Text style={styles.policyText}>{t(lang, 'refundPolicy')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -43,7 +45,7 @@ export default function AssuranceCard({ videoUrl, onOpenPolicy }) {
         >
           <Text style={styles.shieldIcon}>🛡️</Text>
           <View style={styles.razorpayGroup}>
-            <Text style={styles.secureText}>Secure payments powered by</Text>
+            <Text style={styles.secureText}>{t(lang, 'secureRazorpay')}</Text>
             <Text style={styles.razorpayBrand}>
               <Text style={styles.razorpayItalic}>⚡ </Text>
               <Text style={styles.razorpayBold}>Razorpay</Text>

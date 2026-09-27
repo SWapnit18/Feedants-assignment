@@ -140,17 +140,29 @@ const GALLERY_ITEMS = [
   },
 ];
 
-export default function PreviousWinners({ winners = [] }) {
+import { t } from '../utils/i18n';
+
+export default function PreviousWinners({ winners = [], lang = 'ENG' }) {
   const [selectedYear, setSelectedYear] = useState('2024');
   const [activeVideo, setActiveVideo] = useState(null);
 
   const currentData = WINNERS_BY_YEAR[selectedYear] || WINNERS_BY_YEAR['2024'];
 
+  const getPositionLabel = (pos) => {
+    if (pos === '1st Winner' || pos === 1) return t(lang, 'firstWinner');
+    if (pos === '2nd Winner' || pos === 2) return t(lang, 'secondWinner');
+    if (pos === '3rd Winner' || pos === 3) return t(lang, 'thirdWinner');
+    if (pos === '4th Winner' || pos === 4) return t(lang, 'fourthWinner');
+    if (pos === '5th Winner' || pos === 5) return t(lang, 'fifthWinner');
+    if (pos === '6th Winner' || pos === 6) return t(lang, 'sixthWinner');
+    return pos;
+  };
+
   return (
     <View style={styles.wrapper}>
       {/* Title & Year Filters Header */}
       <View style={styles.headerRow}>
-        <Text style={styles.sectionTitle}>Previous Winners</Text>
+        <Text style={styles.sectionTitle}>{t(lang, 'previousWinners')}</Text>
       </View>
 
       {/* Year Tabs Pill Bar */}
@@ -193,7 +205,7 @@ export default function PreviousWinners({ winners = [] }) {
             <Text style={styles.podiumName} numberOfLines={1}>
               {item.name}
             </Text>
-            <Text style={styles.podiumPosition}>{item.positionLabel}</Text>
+            <Text style={styles.podiumPosition}>{getPositionLabel(item.positionLabel)}</Text>
             <Text style={styles.podiumPrize}>{item.prize}</Text>
           </TouchableOpacity>
         ))}
@@ -207,7 +219,7 @@ export default function PreviousWinners({ winners = [] }) {
             <Image source={{ uri: runner.photo }} style={styles.runnerAvatar} />
             <View style={styles.runnerInfoCol}>
               <Text style={styles.runnerName}>{runner.name}</Text>
-              <Text style={styles.runnerPosition}>{runner.positionLabel}</Text>
+              <Text style={styles.runnerPosition}>{getPositionLabel(runner.positionLabel)}</Text>
             </View>
             <Text style={styles.runnerPrize}>{runner.prize}</Text>
           </View>
@@ -217,7 +229,7 @@ export default function PreviousWinners({ winners = [] }) {
       {/* Gallery Section */}
       <View style={styles.gallerySection}>
         <View style={styles.galleryHeader}>
-          <Text style={styles.galleryTitle}>Gallery</Text>
+          <Text style={styles.galleryTitle}>{t(lang, 'gallery')}</Text>
           <TouchableOpacity
             onPress={() =>
               setActiveVideo(
@@ -225,7 +237,7 @@ export default function PreviousWinners({ winners = [] }) {
               )
             }
           >
-            <Text style={styles.viewAllText}>View All</Text>
+            <Text style={styles.viewAllText}>{t(lang, 'viewAll')}</Text>
           </TouchableOpacity>
         </View>
 

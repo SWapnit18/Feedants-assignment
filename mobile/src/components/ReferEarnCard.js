@@ -3,7 +3,9 @@ import { View, Text, TouchableOpacity, Share, StyleSheet } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { colors, radius, spacing } from '../theme';
 
-export default function ReferEarnCard({ referral }) {
+import { t } from '../utils/i18n';
+
+export default function ReferEarnCard({ referral, lang = 'ENG' }) {
   const [copied, setCopied] = useState(false);
   const shareLink = referral?.shareLink || 'https://feedants.com/r/referral123';
   const earnAmount = referral?.earnAmountPerSignup || 10;
@@ -31,7 +33,7 @@ export default function ReferEarnCard({ referral }) {
       </View>
 
       <View style={styles.body}>
-        <Text style={styles.title}>Refer & Earn more discount</Text>
+        <Text style={styles.title}>{t(lang, 'referTitle')}</Text>
 
         <View style={styles.mainRow}>
           {/* Link box with Copy button */}
@@ -40,20 +42,20 @@ export default function ReferEarnCard({ referral }) {
               {shareLink}
             </Text>
             <TouchableOpacity style={styles.copyButton} onPress={handleCopy} activeOpacity={0.7}>
-              <Text style={styles.copyText}>{copied ? 'Copied!' : 'Copy Link'}</Text>
+              <Text style={styles.copyText}>{copied ? t(lang, 'copied') : t(lang, 'copyLink')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Refer Now CTA */}
           <View style={styles.referActionGroup}>
             <TouchableOpacity style={styles.referButton} onPress={handleShare} activeOpacity={0.85}>
-              <Text style={styles.referButtonText}>Refer Now</Text>
+              <Text style={styles.referButtonText}>{t(lang, 'referNow')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <Text style={styles.earnSubtext}>
-          You earn <Text style={styles.earnAmount}>₹{earnAmount}</Text> for every signup
+          {t(lang, 'earnPerSignup')}
         </Text>
       </View>
     </View>

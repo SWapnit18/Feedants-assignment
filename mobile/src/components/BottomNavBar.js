@@ -1,14 +1,19 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { colors, radius, spacing } from '../theme';
+import { t } from '../utils/i18n';
+import ProfileAvatar from './ProfileAvatar';
 
-export default function BottomNavBar({ activeTab = 'competitions', onTabPress }) {
+export default function BottomNavBar({
+  activeTab = 'competitions',
+  onTabPress,
+  lang = 'ENG',
+  userName = 'Swapnit Patel',
+  userImage = null,
+}) {
   const tabs = [
-    { key: 'home', label: 'Home', icon: '🏠' },
-    { key: 'explore', label: 'Explore', icon: '🔍' },
+    { key: 'home', label: t(lang, 'home'), icon: '🏠' },
+    { key: 'explore', label: t(lang, 'explore'), icon: '🔍' },
     { key: 'create', label: '', isCenter: true },
-    { key: 'competitions', label: 'Competitions', icon: '🏆' },
-    { key: 'profile', label: 'Profile', isAvatar: true },
+    { key: 'competitions', label: t(lang, 'competitions'), icon: '🏆' },
+    { key: 'profile', label: t(lang, 'profile'), isAvatar: true },
   ];
 
   return (
@@ -39,11 +44,12 @@ export default function BottomNavBar({ activeTab = 'competitions', onTabPress })
             activeOpacity={0.7}
           >
             {tab.isAvatar ? (
-              <Image
-                source={{
-                  uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
-                }}
-                style={[styles.avatarIcon, isActive && styles.avatarActive]}
+              <ProfileAvatar
+                name={userName}
+                imageUrl={userImage}
+                size={24}
+                fontSize={11}
+                isActive={isActive}
               />
             ) : (
               <Text style={[styles.tabIcon, isActive && styles.tabIconActive]}>

@@ -2,7 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 
-export default function CompetitionHeaderCard({ competition }) {
+import { t } from '../utils/i18n';
+
+export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
   const {
     title = 'Feedants Classical Dance',
     tags = ['Dance', 'Multi-Win'],
@@ -20,24 +22,31 @@ export default function CompetitionHeaderCard({ competition }) {
   const percentBooked = Math.min((spotsBooked / totalSpots) * 100, 100);
   const currencySymbol = currency === 'INR' ? '₹ ' : '';
 
+  const displayTitle = lang === 'हिंदी' ? t(lang, 'title') : title;
+  const displayTags = tags.map((tg) => {
+    if (tg.toLowerCase().includes('dance')) return t(lang, 'tagDance');
+    if (tg.toLowerCase().includes('multi')) return t(lang, 'tagMultiWin');
+    return tg;
+  });
+
   return (
     <View style={styles.card}>
       {/* 1. Title & Registered Badge Row */}
       <View style={styles.titleRow}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>{displayTitle}</Text>
         {user?.isRegistered !== false && (
           <View style={styles.registeredBadge}>
             <View style={styles.checkCircle}>
               <Text style={styles.checkMark}>✓</Text>
             </View>
-            <Text style={styles.registeredText}>Registered</Text>
+            <Text style={styles.registeredText}>{t(lang, 'registeredBadge')}</Text>
           </View>
         )}
       </View>
 
       {/* 2. Tags Row (Dance, Multi-Win, Winners get certificate) */}
       <View style={styles.tagsRow}>
-        {tags.map((tag, idx) => (
+        {displayTags.map((tag, idx) => (
           <View key={idx} style={styles.tagPill}>
             <Text style={styles.tagText}>{tag}</Text>
           </View>
@@ -46,7 +55,7 @@ export default function CompetitionHeaderCard({ competition }) {
         {hasCertificateForWinners && (
           <View style={styles.certificateRow}>
             <Text style={styles.trophyIcon}>🏆</Text>
-            <Text style={styles.certificateText}>Winners get certificate</Text>
+            <Text style={styles.certificateText}>{t(lang, 'winnersCertificate')}</Text>
           </View>
         )}
       </View>
@@ -55,7 +64,7 @@ export default function CompetitionHeaderCard({ competition }) {
       <View style={styles.statsRow}>
         {/* Prize Pool */}
         <View style={styles.statCol}>
-          <Text style={styles.statLabel}>Prize Pool</Text>
+          <Text style={styles.statLabel}>{t(lang, 'prizePool')}</Text>
           <Text style={styles.prizePoolValue}>
             {currencySymbol}{prizePool?.toLocaleString('en-IN')}
           </Text>
@@ -63,7 +72,7 @@ export default function CompetitionHeaderCard({ competition }) {
 
         {/* Entry Fee */}
         <View style={styles.statCol}>
-          <Text style={styles.statLabel}>Entry Fee</Text>
+          <Text style={styles.statLabel}>{t(lang, 'entryFee')}</Text>
           <Text style={styles.entryFeeValue}>
             {currencySymbol}{entryFee}
           </Text>
@@ -74,7 +83,7 @@ export default function CompetitionHeaderCard({ competition }) {
           <View style={styles.spotsHeader}>
             <Text style={styles.spotsIcon}>👥</Text>
             <Text style={styles.spotsLeftText}>
-              {spotsLeft > 0 ? `Only ${spotsLeft} spots left` : 'All spots booked'}
+              {spotsLeft > 0 ? t(lang, 'spotsLeft', { count: spotsLeft }) : 'All spots booked'}
             </Text>
           </View>
 
@@ -88,7 +97,7 @@ export default function CompetitionHeaderCard({ competition }) {
           </View>
 
           <Text style={styles.spotsBookedText}>
-            {spotsBooked} / {totalSpots} Booked
+            {t(lang, 'spotsBooked', { booked: spotsBooked, total: totalSpots })}
           </Text>
         </View>
       </View>

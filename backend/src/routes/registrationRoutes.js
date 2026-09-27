@@ -23,7 +23,7 @@ router.post(
   registerLimiter,
   requireAuth,
   validate([
-    param('id').isMongoId(),
+    param('id').isString().trim().notEmpty(),
     body('paymentId').optional().isString(),
     body('referralCode').optional().isString(),
   ]),

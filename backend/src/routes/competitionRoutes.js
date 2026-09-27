@@ -12,19 +12,19 @@ router.get('/featured', optionalAuth, getCompetitions);
 router.get(
   '/:id',
   optionalAuth,
-  validate([param('id').isMongoId()]),
+  validate([param('id').isString().trim().notEmpty()]),
   getCompetitionDetails
 );
 
 router.get(
   '/:id/winners',
-  validate([param('id').isMongoId()]),
+  validate([param('id').isString().trim().notEmpty()]),
   getPreviousWinners
 );
 
 router.get(
   '/:id/reviews',
-  validate([param('id').isMongoId()]),
+  validate([param('id').isString().trim().notEmpty()]),
   getReviews
 );
 

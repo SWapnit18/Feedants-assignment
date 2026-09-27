@@ -2,100 +2,120 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 
-const TABS = [
-  { key: 'about', label: 'About Competition' },
-  { key: 'judging', label: 'Judging Parameters' },
-  { key: 'rules', label: 'Rules & Eligibility' },
-];
+import { t } from '../utils/i18n';
 
-const JUDGING_CRITERIA = [
-  {
-    title: 'Technique & Accuracy',
-    desc: 'Correctness of steps, posture and rhythm',
-    weight: '25%',
-    progress: 0.25,
-    icon: '👣',
-    iconBg: '#F3E8FF',
-    barColor: '#9333EA',
-  },
-  {
-    title: 'Expression (Abhinaya)',
-    desc: 'Facial expressions and emotional portrayal',
-    weight: '20%',
-    progress: 0.20,
-    icon: '🎭',
-    iconBg: '#FFEDD5',
-    barColor: '#F97316',
-  },
-  {
-    title: 'Creativity',
-    desc: 'Originality and unique presentation',
-    weight: '20%',
-    progress: 0.20,
-    icon: '💡',
-    iconBg: '#DCFCE7',
-    barColor: '#16A34A',
-  },
-  {
-    title: 'Presentation',
-    desc: 'Costume, stage presence and overall impact',
-    weight: '15%',
-    progress: 0.15,
-    icon: '🧘',
-    iconBg: '#FCE7F3',
-    barColor: '#DB2777',
-  },
-  {
-    title: 'Rhythm & Synchronization',
-    desc: 'Alignment with classical music and beats',
-    weight: '10%',
-    progress: 0.10,
-    icon: '🎵',
-    iconBg: '#E0F2FE',
-    barColor: '#0284C7',
-  },
-  {
-    title: 'Overall Performance',
-    desc: 'Complete package of skill, expression and impact',
-    weight: '10%',
-    progress: 0.10,
-    icon: '⭐',
-    iconBg: '#FEF9C3',
-    barColor: '#EAB308',
-  },
-];
-
-const RULES_DATA = [
-  {
-    icon: '🎯',
-    title: 'Eligibility Criteria',
-    desc: 'Open to all age groups and skill levels across India. Both solo classical dancers and registered students can participate.',
-  },
-  {
-    icon: '📹',
-    title: 'Video Format & Quality',
-    desc: 'Performance must be continuous, unedited, well-lit with clear classical audio. Video duration must be between 1 to 10 minutes.',
-  },
-  {
-    icon: '👗',
-    title: 'Costume & Presentation',
-    desc: 'Traditional classical attire (Kathak, Bharatanatyam, Odissi, etc.) with ghungroos/accessories is encouraged.',
-  },
-  {
-    icon: '🚫',
-    title: 'Originality & Disqualification',
-    desc: 'Entries must be original and not published in another active competition. Any pre-recorded lip-sync or digital effects will lead to disqualification.',
-  },
-];
-
-export default function TabsSection({ about, judgingParameters, rulesAndEligibility }) {
+export default function TabsSection({ about, judgingParameters, rulesAndEligibility, lang = 'ENG' }) {
   const [activeTab, setActiveTab] = useState('about');
   const [expanded, setExpanded] = useState(false);
 
-  const aboutText =
-    about ||
-    'This is an online classical dance competition open for all age groups. Participate from anywhere and showcase your talent. Express your passion through traditional dance.';
+  const TABS = [
+    { key: 'about', label: t(lang, 'tabAbout') },
+    { key: 'judging', label: t(lang, 'tabJudging') },
+    { key: 'rules', label: t(lang, 'tabRules') },
+  ];
 
+  const JUDGING_CRITERIA = [
+    {
+      title: t(lang, 'techniqueTitle'),
+      desc: t(lang, 'techniqueSub'),
+      weight: '25%',
+      progress: 0.25,
+      icon: '👣',
+      iconBg: '#F3E8FF',
+      barColor: '#9333EA',
+    },
+    {
+      title: t(lang, 'expressionTitle'),
+      desc: t(lang, 'expressionSub'),
+      weight: '20%',
+      progress: 0.20,
+      icon: '🎭',
+      iconBg: '#FFEDD5',
+      barColor: '#F97316',
+    },
+    {
+      title: t(lang, 'creativityTitle'),
+      desc: t(lang, 'creativitySub'),
+      weight: '20%',
+      progress: 0.20,
+      icon: '💡',
+      iconBg: '#DCFCE7',
+      barColor: '#16A34A',
+    },
+    {
+      title: t(lang, 'presentationTitle'),
+      desc: t(lang, 'presentationSub'),
+      weight: '15%',
+      progress: 0.15,
+      icon: '🧘',
+      iconBg: '#FCE7F3',
+      barColor: '#DB2777',
+    },
+    {
+      title: t(lang, 'rhythmTitle'),
+      desc: t(lang, 'rhythmSub'),
+      weight: '10%',
+      progress: 0.10,
+      icon: '🎵',
+      iconBg: '#E0F2FE',
+      barColor: '#0284C7',
+    },
+    {
+      title: t(lang, 'overallTitle'),
+      desc: t(lang, 'overallSub'),
+      weight: '10%',
+      progress: 0.10,
+      icon: '⭐',
+      iconBg: '#FEF9C3',
+      barColor: '#EAB308',
+    },
+  ];
+
+  const RULES_DATA = lang === 'हिंदी' ? [
+    {
+      icon: '🎯',
+      title: 'पात्रता मानदंड',
+      desc: 'भारत भर के सभी आयु वर्गों और कौशल स्तरों के लिए खुला है। एकल शास्त्रीय नर्तक और पंजीकृत छात्र दोनों भाग ले सकते हैं।',
+    },
+    {
+      icon: '📹',
+      title: 'वीडियो प्रारूप एवं गुणवत्ता',
+      desc: 'प्रदर्शन स्पष्ट रोशनी और स्पष्ट संगीत के साथ निरंतर और असंपादित होना चाहिए। वीडियो की अवधि 1 से 10 मिनट के बीच होनी चाहिए।',
+    },
+    {
+      icon: '👗',
+      title: 'वेशभूषा और प्रस्तुति',
+      desc: 'पारंपरिक शास्त्रीय पोशाक (कथक, भरतनाट्यम, ओडिसी, आदि) और घुंघरू को प्राथमिकता दी जाती है।',
+    },
+    {
+      icon: '🚫',
+      title: 'मौलिकता और अयोग्यता',
+      desc: 'प्रविष्टियाँ मूल होनी चाहिए और किसी अन्य सक्रिय प्रतियोगिता में प्रकाशित नहीं होनी चाहिए। कोई भी डिजिटल प्रभाव अयोग्यता का कारण बनेगा।',
+    },
+  ] : [
+    {
+      icon: '🎯',
+      title: 'Eligibility Criteria',
+      desc: 'Open to all age groups and skill levels across India. Both solo classical dancers and registered students can participate.',
+    },
+    {
+      icon: '📹',
+      title: 'Video Format & Quality',
+      desc: 'Performance must be continuous, unedited, well-lit with clear classical audio. Video duration must be between 1 to 10 minutes.',
+    },
+    {
+      icon: '👗',
+      title: 'Costume & Presentation',
+      desc: 'Traditional classical attire (Kathak, Bharatanatyam, Odissi, etc.) with ghungroos/accessories is encouraged.',
+    },
+    {
+      icon: '🚫',
+      title: 'Originality & Disqualification',
+      desc: 'Entries must be original and not published in another active competition. Any pre-recorded lip-sync or digital effects will lead to disqualification.',
+    },
+  ];
+
+  const aboutText = lang === 'हिंदी' ? t(lang, 'aboutText') : (about || t('ENG', 'aboutText'));
   const isLong = aboutText.length > 130;
   const displayAboutText = expanded || !isLong ? aboutText : `${aboutText.slice(0, 130)}...`;
 
@@ -135,7 +155,7 @@ export default function TabsSection({ about, judgingParameters, rulesAndEligibil
               activeOpacity={0.7}
             >
               <Text style={styles.viewMoreText}>
-                {expanded ? 'View less ⌃' : 'View more ⌄'}
+                {expanded ? t(lang, 'viewLess') : t(lang, 'viewMore')}
               </Text>
             </TouchableOpacity>
           )}
@@ -179,10 +199,8 @@ export default function TabsSection({ about, judgingParameters, rulesAndEligibil
               <Text style={styles.trophyIcon}>🏆</Text>
             </View>
             <View style={styles.totalMarksContent}>
-              <Text style={styles.totalMarksTitle}>Total 100 Marks</Text>
-              <Text style={styles.totalMarksDesc}>
-                You will be judged on the above parameters with a total of 100 marks.
-              </Text>
+              <Text style={styles.totalMarksTitle}>{t(lang, 'totalMarksTitle')}</Text>
+              <Text style={styles.totalMarksDesc}>{t(lang, 'totalMarksSub')}</Text>
             </View>
           </View>
         </View>

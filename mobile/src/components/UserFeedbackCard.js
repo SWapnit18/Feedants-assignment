@@ -37,7 +37,9 @@ const TESTIMONIALS = [
   },
 ];
 
-export default function UserFeedbackCard({ onOpenAll }) {
+import { t } from '../utils/i18n';
+
+export default function UserFeedbackCard({ onOpenAll, lang = 'ENG' }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -61,8 +63,8 @@ export default function UserFeedbackCard({ onOpenAll }) {
       >
         <Text style={styles.chatIcon}>💬</Text>
         <View style={styles.bannerTextGroup}>
-          <Text style={styles.bannerTitle}>Hear From Our Users</Text>
-          <Text style={styles.bannerSubtitle}>See what participants say about Feedants</Text>
+          <Text style={styles.bannerTitle}>{t(lang, 'hearFromUsers')}</Text>
+          <Text style={styles.bannerSubtitle}>{t(lang, 'seeParticipantsSay')}</Text>
         </View>
         <Text style={styles.arrowIcon}>{isExpanded ? '⌃' : '›'}</Text>
       </TouchableOpacity>

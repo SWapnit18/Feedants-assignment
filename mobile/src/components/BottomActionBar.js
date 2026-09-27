@@ -2,10 +2,25 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 
-export default function BottomActionBar({ action, isSubmitting, onPress }) {
+import { t } from '../utils/i18n';
+
+export default function BottomActionBar({ action, isSubmitting, onPress, lang = 'ENG' }) {
   if (!action) return null;
 
   const isDisabled = !action.enabled || isSubmitting;
+
+  let label = action.label;
+  let subLabel = action.subLabel;
+
+  if (lang === 'हिंदी') {
+    if (action.action === 'REGISTER') {
+      label = t(lang, 'registerNow');
+      subLabel = 'प्रवेश शुल्क: ₹99';
+    } else if (action.action === 'SUBMIT' || action.action === 'RESUBMIT' || label?.toLowerCase().includes('submission')) {
+      label = t(lang, 'uploadSubmission');
+      subLabel = t(lang, 'registeredBadge');
+    }
+  }
 
   return (
     <View style={styles.wrapper}>
@@ -19,9 +34,9 @@ export default function BottomActionBar({ action, isSubmitting, onPress }) {
           <ActivityIndicator color="#fff" size="small" />
         ) : (
           <View style={styles.buttonContent}>
-            <Text style={styles.buttonTitle}>{action.label}</Text>
-            {action.subLabel ? (
-              <Text style={styles.buttonSubtitle}>{action.subLabel}</Text>
+            <Text style={styles.buttonTitle}>{label}</Text>
+            {subLabel ? (
+              <Text style={styles.buttonSubtitle}>{subLabel}</Text>
             ) : null}
           </View>
         )}

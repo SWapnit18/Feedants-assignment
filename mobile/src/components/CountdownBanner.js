@@ -3,7 +3,9 @@ import { View, Text, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 import { formatCountdown } from '../utils/dateUtils';
 
-const STATE_LABELS = {
+import { t } from '../utils/i18n';
+
+const STATE_LABELS_ENG = {
   UPCOMING: 'Registration opens in',
   REGISTRATION_OPEN: 'Registration closes in',
   REGISTRATION_FULL: 'Registration closed',
@@ -13,7 +15,17 @@ const STATE_LABELS = {
   RESULTS_DECLARED: 'Results declared',
 };
 
-export default function CountdownBanner({ state, targetAt, serverOffsetMs, onExpire }) {
+const STATE_LABELS_HI = {
+  UPCOMING: 'पंजीकरण शुरू होने में',
+  REGISTRATION_OPEN: 'पंजीकरण समाप्त होने में',
+  REGISTRATION_FULL: 'पंजीकरण बंद',
+  AWAITING_SUBMISSION_WINDOW: 'प्रस्तुति शुरू होने में',
+  SUBMISSION_OPEN: 'प्रस्तुति समाप्त होने में',
+  JUDGING: 'मूल्यांकन जारी है',
+  RESULTS_DECLARED: 'परिणाम घोषित',
+};
+
+export default function CountdownBanner({ state, targetAt, serverOffsetMs, onExpire, lang = 'ENG' }) {
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -21,7 +33,8 @@ export default function CountdownBanner({ state, targetAt, serverOffsetMs, onExp
     return () => clearInterval(id);
   }, []);
 
-  const labelText = STATE_LABELS[state] || 'Registration closes in';
+  const labelMap = lang === 'हिंदी' ? STATE_LABELS_HI : STATE_LABELS_ENG;
+  const labelText = labelMap[state] || t(lang, 'registrationClosesIn');
   const countdown = formatCountdown(targetAt, serverOffsetMs);
 
   if (countdown?.isExpired && onExpire) {
@@ -39,7 +52,7 @@ export default function CountdownBanner({ state, targetAt, serverOffsetMs, onExp
 
       <View style={styles.rightGroup}>
         <Text style={styles.hurryIcon}>⏱️</Text>
-        <Text style={styles.hurry}>Hurry up!</Text>
+        <Text style={styles.hurry}>{t(lang, 'hurryUp')}</Text>
       </View>
     </View>
   );

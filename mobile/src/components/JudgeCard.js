@@ -3,9 +3,16 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, Modal } from 'react-na
 import { Video } from 'expo-av';
 import { colors, radius, spacing } from '../theme';
 
-export default function JudgeCard({ judge }) {
+import { t } from '../utils/i18n';
+
+export default function JudgeCard({ judge, lang = 'ENG' }) {
   const [playing, setPlaying] = useState(false);
   if (!judge) return null;
+
+  const roleLabel = t(lang, 'judgeLabel');
+  const name = lang === 'हिंदी' ? t(lang, 'judgeName') : (judge.name || 'Manju Dubey');
+  const exp1 = lang === 'हिंदी' ? t(lang, 'judgeRole') : (judge.experienceLabel?.split('·')[0] || 'Professional Kathak Dancer');
+  const exp2 = lang === 'हिंदी' ? t(lang, 'judgeExp') : (judge.experienceLabel?.split('·')[1]?.trim() || '12+ Years of Experience');
 
   return (
     <View style={styles.card}>
@@ -18,14 +25,10 @@ export default function JudgeCard({ judge }) {
         style={styles.avatar}
       />
       <View style={styles.info}>
-        <Text style={styles.roleLabel}>{judge.title || 'Judge'}</Text>
-        <Text style={styles.name}>{judge.name || 'Manju Dubey'}</Text>
-        <Text style={styles.experience}>
-          {judge.experienceLabel?.split('·')[0] || 'Professional Kathak Dancer'}
-        </Text>
-        <Text style={styles.subExperience}>
-          {judge.experienceLabel?.split('·')[1]?.trim() || '12+ Years of Experience'}
-        </Text>
+        <Text style={styles.roleLabel}>{roleLabel}</Text>
+        <Text style={styles.name}>{name}</Text>
+        <Text style={styles.experience}>{exp1}</Text>
+        <Text style={styles.subExperience}>{exp2}</Text>
       </View>
 
       <TouchableOpacity
@@ -36,7 +39,7 @@ export default function JudgeCard({ judge }) {
         <View style={styles.playCircle}>
           <Text style={styles.playIcon}>▶</Text>
         </View>
-        <Text style={styles.playLabel}>Intro Video</Text>
+        <Text style={styles.playLabel}>{t(lang, 'introVideo')}</Text>
       </TouchableOpacity>
 
       <Modal visible={playing} animationType="slide" transparent={false} onRequestClose={() => setPlaying(false)}>

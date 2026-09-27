@@ -139,14 +139,21 @@ const getCompetitions = asyncHandler(async (req, res) => {
  */
 const getCompetitionDetails = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  if (!mongoose.isValidObjectId(id)) {
-    throw new ApiError(400, 'Invalid competition id');
+
+  let query = { isPublished: true };
+  if (mongoose.isValidObjectId(id)) {
+    query = { _id: id, isPublished: true };
+  } else if (id && id !== 'featured' && id !== 'default') {
+    query = {
+      $or: [{ slug: id }, { title: new RegExp(id.replace(/-/g, ' '), 'i') }],
+      isPublished: true,
+    };
   }
 
-  const competition = await Competition.findOne({
-    _id: id,
-    isPublished: true,
-  }).lean({ virtuals: true });
+  let competition = await Competition.findOne(query).lean({ virtuals: true });
+  if (!competition) {
+    competition = await Competition.findOne({ isPublished: true }).lean({ virtuals: true });
+  }
 
   if (!competition) throw new ApiError(404, 'Competition not found');
 
@@ -159,12 +166,12 @@ const getCompetitionDetails = asyncHandler(async (req, res) => {
   if (req.userId) {
     [registration, submission] = await Promise.all([
       Registration.findOne({
-        competition: id,
+        competition: competition._id,
         user: req.userId,
         status: 'active',
       }).lean(),
       Submission.findOne({
-        competition: id,
+        competition: competition._id,
         user: req.userId,
         isLatest: true,
       }).lean(),

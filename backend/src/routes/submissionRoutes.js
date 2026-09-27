@@ -26,7 +26,7 @@ router.post(
   requireAuth,
   upload.single('file'),
   validate([
-    param('id').isMongoId(),
+    param('id').isString().trim().notEmpty(),
     body('mediaUrl').optional().isURL(),
     body('mediaType').optional().isIn(['video', 'image']),
   ]),

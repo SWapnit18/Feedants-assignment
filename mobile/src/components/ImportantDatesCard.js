@@ -3,10 +3,19 @@ import { View, Text, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 import { formatDate, formatTime } from '../utils/dateUtils';
 
-function DateCell({ icon, label, iso, isBorderRight, isBorderBottom }) {
+import { t } from '../utils/i18n';
+
+import {
+  CalendarOutlineIcon,
+  PaperPlaneOutlineIcon,
+  TrayUploadOutlineIcon,
+  TrophyOutlineIcon,
+} from './MinimalIcons';
+
+function DateCell({ iconComponent, label, iso, isBorderRight, isBorderBottom }) {
   return (
     <View style={[styles.cell, isBorderRight && styles.borderRight, isBorderBottom && styles.borderBottom]}>
-      <Text style={styles.icon}>{icon}</Text>
+      <View style={styles.iconWrapper}>{iconComponent}</View>
       <View style={styles.cellContent}>
         <Text style={styles.label}>{label}</Text>
         <Text style={styles.value}>{formatDate(iso) || '10 Aug 26'}</Text>
@@ -16,33 +25,33 @@ function DateCell({ icon, label, iso, isBorderRight, isBorderBottom }) {
   );
 }
 
-export default function ImportantDatesCard({ dates = {} }) {
+export default function ImportantDatesCard({ dates = {}, lang = 'ENG' }) {
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Important Dates</Text>
+      <Text style={styles.title}>{t(lang, 'importantDates')}</Text>
       <View style={styles.grid}>
         <DateCell
-          icon="📅"
-          label="Register Before"
+          iconComponent={<CalendarOutlineIcon size={22} color="#0F766E" />}
+          label={t(lang, 'registerBefore')}
           iso={dates.registrationClosesAt}
           isBorderRight
           isBorderBottom
         />
         <DateCell
-          icon="🛫"
-          label="Submission Starts"
+          iconComponent={<PaperPlaneOutlineIcon size={20} color="#0F766E" />}
+          label={t(lang, 'submissionStarts')}
           iso={dates.submissionStartsAt}
           isBorderBottom
         />
         <DateCell
-          icon="📤"
-          label="Submission Ends"
+          iconComponent={<TrayUploadOutlineIcon size={20} color="#0F766E" />}
+          label={t(lang, 'submissionEnds')}
           iso={dates.submissionEndsAt}
           isBorderRight
         />
         <DateCell
-          icon="🏆"
-          label="Result Date"
+          iconComponent={<TrophyOutlineIcon size={20} color="#0F766E" />}
+          label={t(lang, 'resultDate')}
           iso={dates.resultDate}
         />
       </View>
@@ -92,10 +101,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F1F5F9',
     paddingBottom: spacing(3),
   },
-  icon: {
-    fontSize: 18,
-    marginRight: spacing(2),
+  iconWrapper: {
+    marginRight: spacing(2.5),
     marginTop: 2,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cellContent: {
     flex: 1,

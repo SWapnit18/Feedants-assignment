@@ -11,31 +11,57 @@ const ICONS = {
   6: '⭐',
 };
 
-export default function RewardsList({ rewards = [], currency = 'INR', disclaimerText }) {
+import { t } from '../utils/i18n';
+
+const WINNER_KEYS = {
+  1: 'firstWinner',
+  2: 'secondWinner',
+  3: 'thirdWinner',
+  4: 'fourthWinner',
+  5: 'fifthWinner',
+  6: 'sixthWinner',
+};
+
+import { RewardStarOutlineIcon } from './MinimalIcons';
+
+export default function RewardsList({ rewards = [], currency = 'INR', disclaimerText, lang = 'ENG' }) {
   if (!rewards.length) return null;
+
+  const displayDisclaimer = lang === 'हिंदी' ? t(lang, 'disclaimer') : (disclaimerText || t('ENG', 'disclaimer'));
 
   return (
     <View style={styles.card}>
       <Text style={styles.title}>
-        Rewards <Text style={styles.subtitle}>(All Positions)</Text>
+        {t(lang, 'rewardsTitle')} <Text style={styles.subtitle}>{t(lang, 'allPositions')}</Text>
       </Text>
 
-      {rewards.map((r, index) => (
-        <View key={r.position || index} style={styles.row}>
-          <Text style={styles.icon}>{ICONS[r.position] || '⭐'}</Text>
-          <Text style={styles.label}>{r.label || `${r.position}th Winner`}</Text>
-          <Text style={styles.amount}>
-            {currency === 'INR' ? '₹ ' : ''}{r.amount}
-          </Text>
-        </View>
-      ))}
+      {rewards.map((r, index) => {
+        const winnerKey = WINNER_KEYS[r.position];
+        const label = winnerKey ? t(lang, winnerKey) : (r.label || `${r.position}th Winner`);
+        const isStar = r.position >= 4;
 
-      {disclaimerText && (
+        return (
+          <View key={r.position || index} style={styles.row}>
+            <View style={styles.iconBox}>
+              {isStar ? (
+                <RewardStarOutlineIcon size={18} color="#0F766E" />
+              ) : (
+                <Text style={styles.icon}>{ICONS[r.position] || '🏆'}</Text>
+              )}
+            </View>
+            <Text style={styles.label}>{label}</Text>
+            <Text style={styles.amount}>
+              {currency === 'INR' ? '₹ ' : ''}{r.amount}
+            </Text>
+          </View>
+        );
+      })}
+
+      {displayDisclaimer && (
         <View style={styles.disclaimer}>
           <Text style={styles.disclaimerIcon}>ⓘ</Text>
           <Text style={styles.disclaimerText}>
-            <Text style={styles.disclaimerBold}>Disclaimer: </Text>
-            {disclaimerText}
+            {displayDisclaimer}
           </Text>
         </View>
       )}
@@ -77,9 +103,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F8FAFC',
   },
+  iconBox: {
+    width: 28,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
   icon: {
     fontSize: 16,
-    width: 28,
   },
   label: {
     fontSize: 13,

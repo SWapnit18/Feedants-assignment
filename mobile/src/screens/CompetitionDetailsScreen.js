@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useCompetitionDetails, useRegister, useUploadSubmission } from '../hooks/useCompetitionDetails';
 import { computeServerOffsetMs } from '../utils/dateUtils';
+import { t } from '../utils/i18n';
 import { colors, radius, spacing } from '../theme';
 
 import CompetitionHeaderCard from '../components/CompetitionHeaderCard';
@@ -173,9 +174,16 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
 
   const handleBottomNav = (tabKey) => {
     setActiveBottomNavTab(tabKey);
-    if (tabKey !== 'competitions') {
-      setSelectedNavTab(tabKey);
-      setNavigationSheetVisible(true);
+    if (tabKey === 'home') {
+      navigation?.navigate('Home');
+    } else if (tabKey === 'explore') {
+      navigation?.navigate('Explore');
+    } else if (tabKey === 'create') {
+      navigation?.navigate('Create');
+    } else if (tabKey === 'profile') {
+      navigation?.navigate('Profile');
+    } else if (tabKey === 'competitions') {
+      setActiveBottomNavTab('competitions');
     }
   };
 
@@ -198,12 +206,16 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => {
-            showToast('Navigation: Returning to Competition Feed');
+            if (navigation?.canGoBack?.() || navigation?.goBack) {
+              navigation.goBack();
+            } else {
+              showToast('Navigation: At root of Competition Feed');
+            }
           }}
           activeOpacity={0.7}
         >
           <Text style={styles.backArrow}>←</Text>
-          <Text style={styles.backText}>Go back</Text>
+          <Text style={styles.backText}>{t(selectedLanguage, 'goBack')}</Text>
         </TouchableOpacity>
 
         {/* Language selector toggle: ENG | हिंदी */}
@@ -260,12 +272,13 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         {/* 1. Header Card with Title, Tags, Prize Pool, Entry Fee & Spots */}
         <CompetitionHeaderCard
           competition={competition}
+          lang={selectedLanguage}
           onShare={() => showToast('🔗 Competition link copied to clipboard!')}
           onLike={(liked) => showToast(liked ? '❤️ Added to favorites' : 'Removed from favorites')}
         />
 
         {/* 2. Judge Card with photo, credentials & Intro Video button */}
-        <JudgeCard judge={competition.judge} />
+        <JudgeCard judge={competition.judge} lang={selectedLanguage} />
 
         {/* 3. Live Countdown Banner */}
         <CountdownBanner
@@ -273,19 +286,21 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
           targetAt={competition.countdownTargetAt}
           serverOffsetMs={serverOffsetMs}
           onExpire={refetch}
+          lang={selectedLanguage}
         />
 
         {/* 4. Important Dates 2x2 Grid */}
-        <ImportantDatesCard dates={competition.dates} />
+        <ImportantDatesCard dates={competition.dates} lang={selectedLanguage} />
 
         {/* 5. Previous Winners Horizontal Showcase */}
-        <PreviousWinners winners={competition.previousWinners} />
+        <PreviousWinners winners={competition.previousWinners} lang={selectedLanguage} />
 
         {/* 6. Tabs Section (About / Judging / Rules) */}
         <TabsSection
           about={competition.about}
           judgingParameters={competition.judgingParameters}
           rulesAndEligibility={competition.rulesAndEligibility}
+          lang={selectedLanguage}
         />
 
         {/* 7. Rewards Breakdown (All 6 Positions) + Disclaimer */}
@@ -293,11 +308,13 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
           rewards={competition.rewards}
           currency={competition.currency}
           disclaimerText={competition.disclaimerText}
+          lang={selectedLanguage}
         />
 
         {/* 8. Assurance Card: Prize Money Video & Razorpay Security */}
         <AssuranceCard
           videoUrl={competition.prizeMoneyInfoVideoUrl}
+          lang={selectedLanguage}
           onOpenPolicy={(policyKey) => {
             setActivePolicyType(policyKey);
             setPolicyModalVisible(true);
@@ -308,15 +325,19 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         {competition.referral && (
           <ReferEarnCard
             referral={competition.referral}
+            lang={selectedLanguage}
             onCopied={() => showToast('📋 Referral code copied to clipboard!')}
           />
         )}
 
         {/* 10. Hear From Our Users Testimonials Banner */}
-        <UserFeedbackCard onOpenAll={() => showToast('Displaying all participant testimonials')} />
+        <UserFeedbackCard
+          lang={selectedLanguage}
+          onOpenAll={() => showToast('Displaying all participant testimonials')}
+        />
 
         {/* 11. Dashed Border Ad Banner */}
-        <AdBanner />
+        <AdBanner lang={selectedLanguage} />
 
         <View style={{ height: spacing(4) }} />
       </ScrollView>
@@ -326,12 +347,14 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         action={competition.action}
         isSubmitting={!!busyAction}
         onPress={handleAction}
+        lang={selectedLanguage}
       />
 
       {/* Bottom Navigation Bar (Home | Explore | (+) | Competitions | Profile) */}
       <BottomNavBar
         activeTab={activeBottomNavTab}
         onTabPress={handleBottomNav}
+        lang={selectedLanguage}
       />
 
       {/* Registration & Checkout Modal */}

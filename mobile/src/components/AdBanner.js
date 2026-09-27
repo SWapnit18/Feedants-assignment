@@ -2,11 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 
-export default function AdBanner() {
+import { t } from '../utils/i18n';
+
+export default function AdBanner({ lang = 'ENG' }) {
   return (
     <View style={styles.banner}>
       <Text style={styles.icon}>📢</Text>
-      <Text style={styles.text}>Ad Here</Text>
+      <Text style={styles.text}>{t(lang, 'adHere')}</Text>
     </View>
   );
 }
