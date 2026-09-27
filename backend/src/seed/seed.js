@@ -40,7 +40,7 @@ async function seed() {
       name: 'Manju Dubey',
       title: 'Judge',
       experienceLabel: 'Professional Kathak Dancer \u00b7 12+ Years of Experience',
-      photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+      photoUrl: 'http://localhost:5000/uploads/manju_dubey.jpg',
       introVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     },
 

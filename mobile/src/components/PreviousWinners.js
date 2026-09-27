@@ -45,7 +45,7 @@ const WINNERS_BY_YEAR = {
         name: 'Aditi Sharma',
         positionLabel: '4th Winner',
         prize: '₹ 200',
-        photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+        photo: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80',
       },
       {
         rank: 5,
@@ -82,7 +82,7 @@ const WINNERS_BY_YEAR = {
         name: 'Pooja Iyer',
         positionLabel: '2nd Winner',
         prize: '₹ 300',
-        photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+        photo: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
         videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
       },
       {

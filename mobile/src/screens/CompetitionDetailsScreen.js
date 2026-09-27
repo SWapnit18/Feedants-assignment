@@ -51,7 +51,7 @@ const DEFAULT_COMPETITION = {
     name: 'Manju Dubey',
     title: 'Judge',
     experienceLabel: 'Professional Kathak Dancer · 12+ Years of Experience',
-    photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+    photoUrl: null, // Uses high-res Manju Dubey portrait asset
     introVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
   },
   dates: {

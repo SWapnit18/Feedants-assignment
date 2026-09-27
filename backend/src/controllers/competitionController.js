@@ -283,7 +283,7 @@ const getReviews = asyncHandler(async (req, res) => {
     {
       id: 'rev_1',
       author: 'Ananya Sharma',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
       rating: 5,
       date: '2 days ago',
       comment:

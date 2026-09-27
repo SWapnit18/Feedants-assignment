@@ -532,3 +532,24 @@ export function InfoCircleOutlineIcon({ size = 14, color = '#0F766E' }) {
     </Svg>
   );
 }
+
+export function CloudUploadOutlineIcon({ size = 32, color = '#0284C7' }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M7 16C4.79086 16 3 14.2091 3 12C3 9.94421 4.54594 8.24838 6.54924 8.0267C7.03719 5.16789 9.51944 3 12.5 3C15.9388 3 18.7505 5.71457 18.9818 9.10986C20.7303 9.7709 22 11.4589 22 13.5C22 16.0384 19.9837 18.1068 17.4633 18.1965"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M12 12V21M12 12L8.5 15.5M12 12L15.5 15.5"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}

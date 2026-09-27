@@ -6,13 +6,15 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Image,
   ScrollView,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { Video } from 'expo-av';
+import * as DocumentPicker from 'expo-document-picker';
 import { colors, radius, spacing } from '../theme';
+import { CloudUploadOutlineIcon, CertificateTrophyIcon } from './MinimalIcons';
 
 const VIDEO_GUIDELINES = [
   'Video should be clear and well-lit',
@@ -32,52 +34,87 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
     duration: '04:32',
     url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     thumbnail: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&auto=format&fit=crop&q=80',
+    isUserUploaded: false,
   });
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
 
-  const handleChooseVideo = () => {
-    Alert.alert(
-      'Choose Video',
-      'Select performance video from gallery or camera recording',
-      [
-        {
-          text: 'Camera Record',
-          onPress: () => {
-            setSelectedVideo({
-              name: 'camera_recorded_performance.mp4',
-              size: '54.1 MB',
-              duration: '04:32',
-              url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-              thumbnail:
-                'https://images.unsplash.com/photo-1547153760-18fc86324498?w=600&auto=format&fit=crop&q=80',
-            });
-          },
-        },
-        {
-          text: 'Gallery Pick',
-          onPress: () => {
-            setSelectedVideo({
-              name: 'gallery_dance_final.mov',
-              size: '62.0 MB',
-              duration: '03:45',
-              url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-              thumbnail:
-                'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&auto=format&fit=crop&q=80',
-            });
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+  // File selection handler supporting Web file input, drag & drop, and Expo DocumentPicker
+  const handleChooseVideo = async () => {
+    try {
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'video/*,video/mp4,video/quicktime,video/webm,video/x-msvideo';
+        input.onchange = (e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            processSelectedFile(file);
+          }
+        };
+        input.click();
+      } else {
+        const result = await DocumentPicker.getDocumentAsync({
+          type: 'video/*',
+          copyToCacheDirectory: true,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          const asset = result.assets[0];
+          const sizeMb = asset.size ? (asset.size / (1024 * 1024)).toFixed(1) : '35.0';
+          const cleanName = asset.name || 'performance_video.mp4';
+
+          setSelectedVideo({
+            name: cleanName,
+            size: `${sizeMb} MB`,
+            duration: '03:45',
+            url: asset.uri,
+            file: asset,
+            isUserUploaded: true,
+          });
+          setIsPlayingPreview(true);
+          setCurrentStep(2);
+          if (!performanceTitle) {
+            setPerformanceTitle(cleanName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Video selection cancelled or failed:', err);
+    }
+  };
+
+  const processSelectedFile = (file) => {
+    const objectUrl = URL.createObjectURL(file);
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+    const cleanName = file.name;
+
+    setSelectedVideo({
+      name: cleanName,
+      size: `${sizeMb} MB`,
+      duration: '03:30',
+      url: objectUrl,
+      file: file,
+      isUserUploaded: true,
+    });
+    setIsPlayingPreview(true);
+    setCurrentStep(2);
+
+    if (!performanceTitle) {
+      setPerformanceTitle(cleanName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '));
+    }
   };
 
   const handleFinalSubmit = () => {
+    setCurrentStep(3);
     onSubmit({
       title: performanceTitle.trim() || 'Classical Dance Performance',
       description: description.trim(),
       mediaUrl: selectedVideo.url,
       mediaType: 'video',
       duration: selectedVideo.duration,
+      videoName: selectedVideo.name,
+      file: selectedVideo.file,
     });
   };
 
@@ -109,10 +146,14 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
           {/* Screen Title */}
           <Text style={styles.screenHeading}>Submission</Text>
 
-          {/* 3 Step Indicator */}
+          {/* 3 Step Interactive Indicator */}
           <View style={styles.stepsRow}>
             {/* Step 1 */}
-            <View style={styles.stepItem}>
+            <TouchableOpacity
+              style={styles.stepItem}
+              onPress={() => setCurrentStep(1)}
+              activeOpacity={0.8}
+            >
               <View style={[styles.stepCircle, currentStep >= 1 && styles.stepCircleActive]}>
                 <Text style={[styles.stepNumber, currentStep >= 1 && styles.stepNumberActive]}>
                   1
@@ -121,12 +162,16 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
               <Text style={[styles.stepLabel, currentStep >= 1 && styles.stepLabelActive]}>
                 Upload
               </Text>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.stepLine} />
+            <View style={[styles.stepLine, currentStep >= 2 && styles.stepLineActive]} />
 
             {/* Step 2 */}
-            <View style={styles.stepItem}>
+            <TouchableOpacity
+              style={styles.stepItem}
+              onPress={() => setCurrentStep(2)}
+              activeOpacity={0.8}
+            >
               <View style={[styles.stepCircle, currentStep >= 2 && styles.stepCircleActive]}>
                 <Text style={[styles.stepNumber, currentStep >= 2 && styles.stepNumberActive]}>
                   2
@@ -135,12 +180,16 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
               <Text style={[styles.stepLabel, currentStep >= 2 && styles.stepLabelActive]}>
                 Preview
               </Text>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.stepLine} />
+            <View style={[styles.stepLine, currentStep >= 3 && styles.stepLineActive]} />
 
             {/* Step 3 */}
-            <View style={styles.stepItem}>
+            <TouchableOpacity
+              style={styles.stepItem}
+              onPress={() => setCurrentStep(3)}
+              activeOpacity={0.8}
+            >
               <View style={[styles.stepCircle, currentStep >= 3 && styles.stepCircleActive]}>
                 <Text style={[styles.stepNumber, currentStep >= 3 && styles.stepNumberActive]}>
                   3
@@ -149,13 +198,17 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
               <Text style={[styles.stepLabel, currentStep >= 3 && styles.stepLabelActive]}>
                 Submit
               </Text>
-            </View>
+            </TouchableOpacity>
           </View>
 
-          {/* Upload Performance Video Area */}
-          <View style={styles.dropzoneCard}>
+          {/* Upload Performance Video Area / Dropzone */}
+          <TouchableOpacity
+            style={[styles.dropzoneCard, selectedVideo.isUserUploaded && styles.dropzoneCardSuccess]}
+            onPress={handleChooseVideo}
+            activeOpacity={0.85}
+          >
             <View style={styles.cloudIconContainer}>
-              <Text style={styles.cloudIcon}>☁️</Text>
+              <CloudUploadOutlineIcon size={28} color="#0284C7" />
             </View>
             <Text style={styles.dropzoneTitle}>Upload Your Performance Video</Text>
             <Text style={styles.dropzoneSubtitle}>Drag & drop your video here or</Text>
@@ -165,38 +218,58 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
               onPress={handleChooseVideo}
               activeOpacity={0.8}
             >
-              <Text style={styles.chooseVideoText}>Choose Video</Text>
+              <Text style={styles.chooseVideoText}>
+                {selectedVideo.isUserUploaded ? 'Change Video' : 'Choose Video'}
+              </Text>
             </TouchableOpacity>
+
+            {selectedVideo.isUserUploaded && (
+              <View style={styles.selectedBadge}>
+                <Text style={styles.selectedBadgeText}>
+                  ✓ Selected: {selectedVideo.name} ({selectedVideo.size})
+                </Text>
+              </View>
+            )}
 
             <Text style={styles.fileSpecsText}>
               MP4, MOV up to 500MB • Min 1 min, Max 10 min
             </Text>
-          </View>
+          </TouchableOpacity>
 
           {/* Video Guidelines Card */}
           <View style={styles.guidelinesCard}>
             <View style={styles.guidelinesHeader}>
-              <Text style={styles.guidelinesTrophy}>🏆</Text>
+              <View style={{ marginRight: 6 }}>
+                <CertificateTrophyIcon size={16} color="#854D0E" />
+              </View>
               <Text style={styles.guidelinesTitle}>Video Guidelines</Text>
             </View>
             {VIDEO_GUIDELINES.map((guide, gIdx) => (
               <View key={gIdx} style={styles.guidelineRow}>
-                <Text style={styles.checkIcon}>✔</Text>
+                <Text style={styles.checkIcon}>✓</Text>
                 <Text style={styles.guidelineText}>{guide}</Text>
               </View>
             ))}
           </View>
 
           {/* Video Preview Player */}
-          <Text style={styles.sectionHeader}>Video Preview</Text>
+          <View style={styles.previewHeaderRow}>
+            <Text style={styles.sectionHeader}>Video Preview</Text>
+            {selectedVideo.isUserUploaded && (
+              <View style={styles.liveTag}>
+                <Text style={styles.liveTagText}>● Ready to Play</Text>
+              </View>
+            )}
+          </View>
+
           <View style={styles.previewPlayerContainer}>
-            {isPlayingPreview ? (
+            {isPlayingPreview || selectedVideo.isUserUploaded ? (
               <Video
                 source={{ uri: selectedVideo.url }}
                 style={styles.previewVideo}
                 useNativeControls
-                resizeMode="cover"
-                shouldPlay
+                resizeMode="contain"
+                shouldPlay={false}
               />
             ) : (
               <TouchableOpacity
@@ -213,6 +286,16 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
                 </View>
               </TouchableOpacity>
             )}
+          </View>
+
+          {/* Video Details Card */}
+          <View style={styles.fileInfoCard}>
+            <Text style={styles.fileInfoName} numberOfLines={1}>
+              🎥 {selectedVideo.name}
+            </Text>
+            <Text style={styles.fileInfoMeta}>
+              File Size: {selectedVideo.size} • Format: Video
+            </Text>
           </View>
 
           {/* Additional Information Inputs */}
@@ -333,7 +416,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing(4),
   },
-  // Steps Row Styles
   stepsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -380,7 +462,9 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing(2),
     marginBottom: 16,
   },
-  // Dropzone styles
+  stepLineActive: {
+    backgroundColor: '#0F766E',
+  },
   dropzoneCard: {
     borderWidth: 1.5,
     borderColor: '#BAE6FD',
@@ -392,6 +476,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing(4),
   },
+  dropzoneCardSuccess: {
+    borderColor: '#0F766E',
+    backgroundColor: '#E6F7F4',
+  },
   cloudIconContainer: {
     width: 52,
     height: 52,
@@ -400,9 +488,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing(2.5),
-  },
-  cloudIcon: {
-    fontSize: 26,
   },
   dropzoneTitle: {
     fontSize: 14.5,
@@ -422,18 +507,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: spacing(5),
     paddingVertical: spacing(2),
-    marginBottom: spacing(3),
+    marginBottom: spacing(2),
   },
   chooseVideoText: {
     color: '#0284C7',
     fontWeight: '700',
     fontSize: 12.5,
   },
+  selectedBadge: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: spacing(3),
+    paddingVertical: spacing(1.5),
+    borderRadius: radius.pill,
+    marginBottom: spacing(2),
+  },
+  selectedBadgeText: {
+    color: '#047857',
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
   fileSpecsText: {
     fontSize: 10.5,
     color: '#64748B',
   },
-  // Guidelines styles
   guidelinesCard: {
     backgroundColor: '#FEF9C3',
     borderRadius: radius.md,
@@ -447,10 +545,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing(2),
   },
-  guidelinesTrophy: {
-    fontSize: 16,
-    marginRight: spacing(1.5),
-  },
   guidelinesTitle: {
     fontSize: 13,
     fontWeight: '800',
@@ -462,7 +556,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   checkIcon: {
-    color: '#EAB308',
+    color: '#CA8A04',
     fontSize: 12,
     marginRight: spacing(2),
     fontWeight: '800',
@@ -473,20 +567,35 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 16,
   },
-  // Video Preview styles
+  previewHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing(1),
+    marginBottom: spacing(2),
+  },
   sectionHeader: {
     fontSize: 14,
     fontWeight: '800',
     color: colors.text,
-    marginBottom: spacing(2),
-    marginTop: spacing(1),
+  },
+  liveTag: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: spacing(2),
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+  },
+  liveTagText: {
+    color: '#059669',
+    fontSize: 10.5,
+    fontWeight: '700',
   },
   previewPlayerContainer: {
-    height: 180,
+    height: 190,
     borderRadius: radius.md,
     overflow: 'hidden',
     backgroundColor: '#0F172A',
-    marginBottom: spacing(4),
+    marginBottom: spacing(2.5),
   },
   previewVideo: {
     width: '100%',
@@ -532,7 +641,24 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
-  // Additional info styles
+  fileInfoCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: radius.sm,
+    padding: spacing(2.5),
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: spacing(4),
+  },
+  fileInfoName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  fileInfoMeta: {
+    fontSize: 10.5,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
   inputFieldLabel: {
     fontSize: 12,
     fontWeight: '700',

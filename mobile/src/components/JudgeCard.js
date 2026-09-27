@@ -5,6 +5,8 @@ import { colors, radius, spacing } from '../theme';
 
 import { t } from '../utils/i18n';
 
+const MANJU_DUBEY_PHOTO = require('../../assets/manju_dubey.jpg');
+
 export default function JudgeCard({ judge, lang = 'ENG' }) {
   const [playing, setPlaying] = useState(false);
   if (!judge) return null;
@@ -14,14 +16,13 @@ export default function JudgeCard({ judge, lang = 'ENG' }) {
   const exp1 = lang === 'हिंदी' ? t(lang, 'judgeRole') : (judge.experienceLabel?.split('·')[0] || 'Professional Kathak Dancer');
   const exp2 = lang === 'हिंदी' ? t(lang, 'judgeExp') : (judge.experienceLabel?.split('·')[1]?.trim() || '12+ Years of Experience');
 
+  const isOldPhoto = !judge.photoUrl || judge.photoUrl.includes('1534528741775');
+  const photoSource = isOldPhoto ? MANJU_DUBEY_PHOTO : { uri: judge.photoUrl };
+
   return (
     <View style={styles.card}>
       <Image
-        source={{
-          uri:
-            judge.photoUrl ||
-            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        }}
+        source={photoSource}
         style={styles.avatar}
       />
       <View style={styles.info}>

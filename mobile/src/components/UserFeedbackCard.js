@@ -33,7 +33,7 @@ const TESTIMONIALS = [
     author: 'Aditi Sharma',
     subtitle: '4th Winner 2024',
     avatar:
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80',
   },
 ];
 
