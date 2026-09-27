@@ -159,12 +159,24 @@ const registerForCompetition = asyncHandler(async (req, res) => {
     }
   }
 
+  const updatedComp = await Competition.findById(competition._id).select('totalSpots maxParticipants spotsBooked').lean();
+  const totalSpots = updatedComp ? (updatedComp.totalSpots || updatedComp.maxParticipants || 20) : 20;
+  const spotsBooked = updatedComp ? updatedComp.spotsBooked : 1;
+  const spotsLeft = Math.max(totalSpots - spotsBooked, 0);
+
   res.status(201).json({
     success: true,
     message: 'Registration successful',
     data: {
       registrationId: registration._id,
       registeredAt: registration.createdAt,
+      status: registration.status,
+      isRegistered: true,
+      spotsBooked,
+      spotsLeft,
+      availableSpots: spotsLeft,
+      totalSpots,
+      maxParticipants: totalSpots,
     },
   });
 });

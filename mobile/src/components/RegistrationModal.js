@@ -42,7 +42,7 @@ export default function RegistrationModal({
               </View>
               <View style={[styles.badge, styles.badgeTeal]}>
                 <Text style={[styles.badgeText, styles.badgeTealText]}>
-                  👥 {competition.capacity?.spotsLeft ?? 19} spots left
+                  👥 {competition.capacity?.spotsLeft ?? (competition.totalSpots ? Math.max(competition.totalSpots - (competition.spotsBooked || 0), 0) : 0)} spots left
                 </Text>
               </View>
             </View>

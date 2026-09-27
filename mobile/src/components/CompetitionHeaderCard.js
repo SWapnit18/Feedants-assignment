@@ -17,10 +17,10 @@ export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
     user = {},
   } = competition || {};
 
-  const totalSpots = capacity.totalSpots || 20;
-  const spotsBooked = capacity.spotsBooked || 1;
+  const totalSpots = capacity.totalSpots ?? competition?.totalSpots ?? 20;
+  const spotsBooked = capacity.spotsBooked ?? competition?.spotsBooked ?? 0;
   const spotsLeft = capacity.spotsLeft ?? Math.max(totalSpots - spotsBooked, 0);
-  const percentBooked = Math.min((spotsBooked / totalSpots) * 100, 100);
+  const percentBooked = totalSpots > 0 ? Math.min((spotsBooked / totalSpots) * 100, 100) : 0;
   const currencySymbol = currency === 'INR' ? '₹ ' : '';
 
   const displayTitle = lang === 'हिंदी' ? t(lang, 'title') : title;
@@ -35,7 +35,7 @@ export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
       {/* 1. Title & Registered Badge Row */}
       <View style={styles.titleRow}>
         <Text style={styles.title}>{displayTitle}</Text>
-        {user?.isRegistered !== false && (
+        {user?.isRegistered === true && (
           <View style={styles.registeredBadge}>
             <View style={styles.checkCircle}>
               <Text style={styles.checkMark}>✓</Text>

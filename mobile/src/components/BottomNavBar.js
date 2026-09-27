@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 import { t } from '../utils/i18n';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import ProfileAvatar from './ProfileAvatar';
 import {
   HomeNavIcon,
@@ -14,9 +15,12 @@ export default function BottomNavBar({
   activeTab = 'competitions',
   onTabPress,
   lang = 'ENG',
-  userName = 'Swapnit Patel',
-  userImage = null,
+  userName,
+  userImage,
 }) {
+  const { user } = useCurrentUser();
+  const effectiveName = userName !== undefined ? userName : (user?.name || '');
+  const effectiveImage = userImage !== undefined ? userImage : (user?.profileImage || null);
   const tabs = [
     { key: 'home', label: t(lang, 'home') },
     { key: 'explore', label: t(lang, 'explore') },
@@ -70,8 +74,8 @@ export default function BottomNavBar({
             <View style={styles.iconContainer}>
               {tab.isAvatar ? (
                 <ProfileAvatar
-                  name={userName}
-                  imageUrl={userImage}
+                  name={effectiveName}
+                  imageUrl={effectiveImage}
                   size={24}
                   fontSize={11}
                   isActive={isActive}

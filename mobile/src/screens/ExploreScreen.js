@@ -5,6 +5,7 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
   StyleSheet,
   StatusBar,
 } from 'react-native';
@@ -12,12 +13,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../theme';
 import BottomNavBar from '../components/BottomNavBar';
 import ProfileAvatar from '../components/ProfileAvatar';
+import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useCompetition } from '../hooks/useCompetition';
 
 export default function ExploreScreen({ navigation }) {
+  const { user } = useCurrentUser();
+  const { data: compData, isLoading } = useCompetition('feedants-classical-dance');
+  const comp = compData?.competition;
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
   const categories = ['All', 'Classical Dance', 'Bollywood', 'Contemporary', 'Folk', 'Vocals'];
+
+  const spotsLeft = comp?.capacity?.spotsLeft ?? (comp ? comp.totalSpots - comp.spotsBooked : null);
+  const totalSpots = comp?.capacity?.totalSpots ?? comp?.totalSpots ?? 20;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -40,7 +50,12 @@ export default function ExploreScreen({ navigation }) {
           activeOpacity={0.8}
           accessibilityLabel="View Profile"
         >
-          <ProfileAvatar name="Swapnit Patel" size={34} fontSize={15} />
+          <ProfileAvatar
+            name={user?.name}
+            imageUrl={user?.profileImage || user?.photoUrl}
+            size={34}
+            fontSize={15}
+          />
         </TouchableOpacity>
       </View>
 
@@ -75,43 +90,41 @@ export default function ExploreScreen({ navigation }) {
 
       {/* Content */}
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Main Competition Result */}
-        <TouchableOpacity
-          style={styles.resultCard}
-          onPress={() => navigation?.navigate('CompetitionDetails')}
-          activeOpacity={0.85}
-        >
-          <View style={styles.cardTop}>
-            <View>
-              <Text style={styles.cardTitle}>Feedants Classical Dance</Text>
-              <Text style={styles.judgeSubtitle}>Judge: Manju Dubey (Kathak)</Text>
+        {isLoading ? (
+          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing(6) }} />
+        ) : comp ? (
+          <TouchableOpacity
+            style={styles.resultCard}
+            onPress={() => navigation?.navigate('CompetitionDetails')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.cardTop}>
+              <View style={{ flex: 1, paddingRight: spacing(2) }}>
+                <Text style={styles.cardTitle}>{comp.title}</Text>
+                <Text style={styles.judgeSubtitle}>
+                  Judge: {comp.judge?.name || 'Verified Expert'} {comp.judge?.profession ? `(${comp.judge.profession})` : ''}
+                </Text>
+              </View>
+              <View style={styles.feeBadge}>
+                <Text style={styles.feeText}>₹{comp.entryFee} Fee</Text>
+              </View>
             </View>
-            <View style={styles.feeBadge}>
-              <Text style={styles.feeText}>₹99 Fee</Text>
+            <View style={styles.metricsRow}>
+              <Text style={styles.metricText}>
+                🏆 Prize: <Text style={styles.bold}>₹{comp.prizePool?.toLocaleString('en-IN')}</Text>
+              </Text>
+              {spotsLeft !== null && (
+                <Text style={styles.metricText}>
+                  👥 Spots Left: <Text style={styles.bold}>{spotsLeft}/{totalSpots}</Text>
+                </Text>
+              )}
             </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No competitions found.</Text>
           </View>
-          <View style={styles.metricsRow}>
-            <Text style={styles.metricText}>🏆 Prize: <Text style={styles.bold}>₹1,500</Text></Text>
-            <Text style={styles.metricText}>👥 Spots Left: <Text style={styles.bold}>19/20</Text></Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Mock Secondary Result */}
-        <View style={styles.resultCardSecondary}>
-          <View style={styles.cardTop}>
-            <View>
-              <Text style={styles.cardTitleSecondary}>Folk Beats 2026</Text>
-              <Text style={styles.judgeSubtitle}>Starts 15 Sept 2026</Text>
-            </View>
-            <View style={styles.comingSoonBadge}>
-              <Text style={styles.comingSoonText}>Upcoming</Text>
-            </View>
-          </View>
-          <View style={styles.metricsRow}>
-            <Text style={styles.metricText}>🏆 Prize: <Text style={styles.bold}>₹3,000</Text></Text>
-            <Text style={styles.metricText}>👥 Spots: <Text style={styles.bold}>50</Text></Text>
-          </View>
-        </View>
+        )}
       </ScrollView>
 
       {/* Bottom Navigation Bar */}
@@ -221,14 +234,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 6,
   },
-  resultCardSecondary: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: radius.lg,
-    padding: spacing(4),
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: spacing(3),
-  },
   cardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -239,11 +244,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: colors.text,
-  },
-  cardTitleSecondary: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#64748B',
   },
   judgeSubtitle: {
     fontSize: 12,
@@ -261,17 +261,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F766E',
   },
-  comingSoonBadge: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: spacing(2.5),
-    paddingVertical: 3,
-    borderRadius: radius.pill,
-  },
-  comingSoonText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94A3B8',
-  },
   metricsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -286,5 +275,13 @@ const styles = StyleSheet.create({
   bold: {
     fontWeight: '700',
     color: colors.text,
+  },
+  emptyContainer: {
+    paddingVertical: spacing(8),
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: colors.textMuted,
+    fontSize: 14,
   },
 });

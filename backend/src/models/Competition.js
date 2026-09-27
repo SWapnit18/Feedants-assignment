@@ -34,9 +34,22 @@ const JudgeSchema = new Schema(
   {
     name: { type: String, required: true },
     title: { type: String },
+    profession: { type: String },
+    experience: { type: String },
     experienceLabel: { type: String }, // e.g. "12+ Years of Experience"
+    profileImage: { type: String },
     photoUrl: { type: String },
+    introductionVideo: { type: String },
     introVideoUrl: { type: String },
+  },
+  { _id: false }
+);
+
+const JudgingParameterSchema = new Schema(
+  {
+    name: { type: String, required: true },
+    description: { type: String },
+    percentage: { type: Number, required: true },
   },
   { _id: false }
 );
@@ -44,6 +57,7 @@ const JudgeSchema = new Schema(
 const CompetitionSchema = new Schema(
   {
     title: { type: String, required: true, trim: true },
+    category: { type: String, default: 'Classical Dance' },
     tags: [{ type: String }], // e.g. ["Dance", "Multi-Win"]
     hasCertificateForWinners: { type: Boolean, default: false },
 
@@ -52,11 +66,11 @@ const CompetitionSchema = new Schema(
     currency: { type: String, default: 'INR' },
 
     // --- Capacity -----------------------------------------------------
-    // totalSpots is fixed at creation time. spotsBooked is the ONLY field
+    // totalSpots / maxParticipants is fixed at creation time. spotsBooked is the ONLY field
     // that changes on every registration and is mutated exclusively
-    // through atomic findOneAndUpdate operations (see
-    // registrationController) so it is safe under concurrent writes.
+    // through atomic findOneAndUpdate operations.
     totalSpots: { type: Number, required: true, min: 1 },
+    maxParticipants: { type: Number },
     spotsBooked: { type: Number, default: 0, min: 0 },
 
     judge: JudgeSchema,
@@ -70,7 +84,11 @@ const CompetitionSchema = new Schema(
 
     // --- Content tabs ---------------------------------------------------
     aboutText: { type: String, default: '' },
-    judgingParameters: { type: String, default: '' },
+    description: { type: String },
+    judgingParametersText: { type: String, default: '' },
+    judgingParameters: [JudgingParameterSchema],
+    rules: { type: String },
+    eligibility: { type: String },
     rulesAndEligibility: { type: String, default: '' },
 
     rewards: [RewardSchema],
@@ -87,9 +105,6 @@ const CompetitionSchema = new Schema(
     },
 
     isPublished: { type: Boolean, default: true },
-    // Soft delete / manual override for edge cases (e.g. organiser cancels
-    // a competition mid-flight); when true, all write actions are blocked
-    // regardless of the date-derived state.
     isCancelled: { type: Boolean, default: false },
   },
   { timestamps: true }
@@ -99,7 +114,36 @@ CompetitionSchema.index({ registrationClosesAt: 1 });
 CompetitionSchema.index({ isPublished: 1, isCancelled: 1 });
 
 CompetitionSchema.virtual('spotsLeft').get(function spotsLeft() {
-  return Math.max(this.totalSpots - this.spotsBooked, 0);
+  return Math.max((this.totalSpots || this.maxParticipants || 0) - (this.spotsBooked || 0), 0);
+});
+
+CompetitionSchema.virtual('availableSpots').get(function availableSpots() {
+  return Math.max((this.totalSpots || this.maxParticipants || 0) - (this.spotsBooked || 0), 0);
+});
+
+CompetitionSchema.virtual('registrationStart').get(function() {
+  return this.registrationOpensAt;
+});
+
+CompetitionSchema.virtual('registrationEnd').get(function() {
+  return this.registrationClosesAt;
+});
+
+CompetitionSchema.virtual('submissionStart').get(function() {
+  return this.submissionStartsAt;
+});
+
+CompetitionSchema.virtual('submissionEnd').get(function() {
+  return this.submissionEndsAt;
+});
+
+CompetitionSchema.pre('save', function(next) {
+  if (this.totalSpots && !this.maxParticipants) {
+    this.maxParticipants = this.totalSpots;
+  } else if (this.maxParticipants && !this.totalSpots) {
+    this.totalSpots = this.maxParticipants;
+  }
+  next();
 });
 
 CompetitionSchema.set('toJSON', { virtuals: true });

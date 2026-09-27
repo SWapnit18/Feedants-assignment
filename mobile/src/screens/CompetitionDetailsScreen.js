@@ -6,10 +6,13 @@ import {
   TouchableOpacity,
   StatusBar,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 
 import { useCompetitionDetails, useRegister, useUploadSubmission } from '../hooks/useCompetitionDetails';
+import { fetchReviews } from '../api/competitionApi';
 import { computeServerOffsetMs } from '../utils/dateUtils';
 import { t } from '../utils/i18n';
 import { colors, radius, spacing } from '../theme';
@@ -32,79 +35,18 @@ import PolicyModal from '../components/PolicyModal';
 import RegistrationModal from '../components/RegistrationModal';
 import NavigationSheet from '../components/NavigationSheet';
 
-const DEFAULT_COMPETITION = {
-  id: 'feedants-classical-dance',
-  title: 'Feedants Classical Dance',
-  subtitle: 'Express your passion through traditional dance',
-  tags: ['Dance', 'Multi-Win'],
-  hasCertificateForWinners: true,
-  prizePool: 1500,
-  entryFee: 99,
-  currency: 'INR',
-  bannerUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800&auto=format&fit=crop&q=80',
-  capacity: {
-    totalSpots: 20,
-    spotsBooked: 1,
-    spotsLeft: 19,
-  },
-  judge: {
-    name: 'Manju Dubey',
-    title: 'Judge',
-    experienceLabel: 'Professional Kathak Dancer · 12+ Years of Experience',
-    photoUrl: null, // Uses high-res Manju Dubey portrait asset
-    introVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  },
-  dates: {
-    registrationOpensAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    registrationClosesAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000 + 28 * 60 * 1000 + 32 * 1000).toISOString(),
-    submissionStartsAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    submissionEndsAt: new Date(Date.now() + 24 * 24 * 60 * 60 * 1000).toISOString(),
-    resultDate: new Date(Date.now() + 26 * 24 * 60 * 60 * 1000).toISOString(),
-    serverTime: new Date().toISOString(),
-  },
-  state: 'REGISTRATION_OPEN',
-  countdownTargetAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000 + 28 * 60 * 1000 + 32 * 1000).toISOString(),
-  about: 'This is an online classical dance competition open for all age groups. Participate from anywhere and showcase your talent. Express your passion through traditional dance.',
-  judgingParameters: 'Entries are judged on technique, rhythm (Taal), emotional expression (Bhava), choreography originality, costume, and overall stage presence by our panel of professional dancers.',
-  rulesAndEligibility: 'Open to all age groups and skill levels. One entry per participant. Video performance must be continuous and unedited between 2 to 3 minutes.',
-  rewards: [
-    { position: 1, label: '1st Winner', amount: 550 },
-    { position: 2, label: '2nd Winner', amount: 300 },
-    { position: 3, label: '3rd Winner', amount: 240 },
-    { position: 4, label: '4th Winner', amount: 200 },
-    { position: 5, label: '5th Winner', amount: 130 },
-    { position: 6, label: '6th Winner', amount: 80 },
-  ],
-  previousWinners: [
-    { name: 'Riya Shah', position: 1, photoUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&auto=format&fit=crop&q=80', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
-    { name: 'Aarav Mehta', position: 1, photoUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
-    { name: 'Neha Verma', position: 2, photoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
-    { name: 'Ishita Chopra', position: 3, photoUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&auto=format&fit=crop&q=80', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
-  ],
-  disclaimerText: 'Only contributions from paid participants will be considered for judging.',
-  prizeMoneyInfoVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  referral: { earnAmountPerSignup: 10, shareLink: 'https://feedants.com/r/classical-dance-2026' },
-  user: {
-    isAuthenticated: true,
-    isRegistered: true,
-  },
-  action: {
-    label: 'Upload Submission',
-    subLabel: 'Registered',
-    action: 'SUBMIT',
-    enabled: true,
-  },
-};
-
 export default function CompetitionDetailsScreen({ route, navigation }) {
   const competitionId = route?.params?.competitionId;
-  const { data: remoteData, refetch } = useCompetitionDetails(competitionId);
+  const { data: competition, isLoading, isError, refetch } = useCompetitionDetails(competitionId);
 
-  // Blend live remote data with default state
-  const competition = remoteData || DEFAULT_COMPETITION;
+  const { data: reviews = [] } = useQuery({
+    queryKey: ['reviews', competitionId || 'feedants-classical-dance'],
+    queryFn: () => fetchReviews(competitionId || 'feedants-classical-dance'),
+    staleTime: 30000,
+  });
 
-  const registerMutation = useRegister(competitionId || competition.id);
-  const submitMutation = useUploadSubmission(competitionId || competition.id);
+  const registerMutation = useRegister(competitionId || competition?.id);
+  const submitMutation = useUploadSubmission(competitionId || competition?.id);
 
   const [busyAction, setBusyAction] = useState(null);
   const [submissionModalVisible, setSubmissionModalVisible] = useState(false);
@@ -151,7 +93,8 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
       showToast("🎉 Registration Successful! You're enrolled in Feedants Classical Dance!");
       refetch();
     } catch (err) {
-      showToast(err.message || 'Registration completed successfully!');
+      // Real API Error Handling (Requirement #7, #8, #18)
+      showToast(err.message || 'Registration failed. Please try again.');
       setRegistrationModalVisible(false);
     } finally {
       setBusyAction(null);
@@ -174,7 +117,8 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
       showToast('🌟 Entry Submitted! Your performance was sent for judging.');
       refetch();
     } catch (err) {
-      showToast('🌟 Entry Submitted! Your performance was sent for judging.');
+      // Real API Error Handling (Requirement #18)
+      showToast(err.message || 'Submission failed. Please check the file and try again.');
       setSubmissionModalVisible(false);
     } finally {
       setBusyAction(null);
@@ -195,6 +139,30 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
       setActiveBottomNavTab('competitions');
     }
   };
+
+  // Loading State
+  if (isLoading && !competition) {
+    return (
+      <SafeAreaView style={styles.centerContainer} edges={['top', 'left', 'right']}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Loading competition details...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // Error / Unavailable State (Requirement #20)
+  if (!competition) {
+    return (
+      <SafeAreaView style={styles.centerContainer} edges={['top', 'left', 'right']}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <Text style={styles.emptyScreenTitle}>Competition information is currently unavailable.</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()} activeOpacity={0.8}>
+          <Text style={styles.retryBtnText}>Retry</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -301,7 +269,7 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         {/* 4. Important Dates 2x2 Grid */}
         <ImportantDatesCard dates={competition.dates} lang={selectedLanguage} />
 
-        {/* 5. Previous Winners Horizontal Showcase */}
+        {/* 5. Previous Winners Horizontal Showcase (Real empty state if none) */}
         <PreviousWinners winners={competition.previousWinners} lang={selectedLanguage} />
 
         {/* 6. Tabs Section (About / Judging / Rules) */}
@@ -341,8 +309,9 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
 
         {/* 10. Hear From Our Users Testimonials Banner */}
         <UserFeedbackCard
+          testimonials={reviews}
           lang={selectedLanguage}
-          onOpenAll={() => showToast('Displaying all participant testimonials')}
+          onOpenAll={() => showToast('Displaying participant reviews')}
         />
 
         {/* 11. Dashed Border Ad Banner */}
@@ -351,7 +320,7 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         <View style={{ height: spacing(4) }} />
       </ScrollView>
 
-      {/* Floating Bottom Action Button (Upload Submission / Registered) */}
+      {/* Floating Bottom Action Button (Upload Submission / Registered / Register Now) */}
       <BottomActionBar
         action={competition.action}
         isSubmitting={!!busyAction}
@@ -359,73 +328,104 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         lang={selectedLanguage}
       />
 
-      {/* Bottom Navigation Bar (Home | Explore | (+) | Competitions | Profile) */}
-      <BottomNavBar
-        activeTab={activeBottomNavTab}
-        onTabPress={handleBottomNav}
-        lang={selectedLanguage}
-      />
-
-      {/* Registration & Checkout Modal */}
+      {/* Slide-Up Interactive Modals */}
       <RegistrationModal
         visible={registrationModalVisible}
         competition={competition}
-        onClose={() => setRegistrationModalVisible(false)}
-        onConfirm={handleConfirmRegistration}
         isRegistering={busyAction === 'REGISTER'}
+        onConfirm={handleConfirmRegistration}
+        onClose={() => setRegistrationModalVisible(false)}
       />
 
-      {/* Submission Modal */}
       <SubmissionModal
         visible={submissionModalVisible}
-        onClose={() => setSubmissionModalVisible(false)}
-        onSubmit={handleModalSubmit}
+        competitionId={competition.id}
+        entryFee={competition.entryFee}
         isSubmitting={busyAction === 'SUBMITTING'}
+        onSubmit={handleModalSubmit}
+        onClose={() => setSubmissionModalVisible(false)}
       />
 
-      {/* Policy & Compliance Modal */}
       <PolicyModal
         visible={policyModalVisible}
         policyType={activePolicyType}
         onClose={() => setPolicyModalVisible(false)}
       />
 
-      {/* Interactive Bottom Nav Sheet */}
       <NavigationSheet
         visible={navigationSheetVisible}
-        tabKey={selectedNavTab}
-        onClose={() => {
+        selectedTab={selectedNavTab}
+        onSelectTab={(tab) => {
+          setSelectedNavTab(tab);
           setNavigationSheetVisible(false);
-          setActiveBottomNavTab('competitions');
+          handleBottomNav(tab);
         }}
+        onClose={() => setNavigationSheetVisible(false)}
+      />
+
+      {/* Bottom Sticky Tab Navigation Bar */}
+      <BottomNavBar
+        activeTab={activeBottomNavTab}
+        onTabPress={handleBottomNav}
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  centerContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing(4),
+  },
+  loadingText: {
+    marginTop: spacing(3),
+    fontSize: 14,
+    color: colors.textMuted,
+    fontWeight: '600',
+  },
+  emptyScreenTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing(3),
+  },
+  retryBtn: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing(4),
+    paddingVertical: spacing(2),
+    borderRadius: radius.md,
+  },
+  retryBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+  },
   toastBanner: {
     position: 'absolute',
-    top: 55,
+    top: 50,
     left: spacing(4),
     right: spacing(4),
-    zIndex: 999,
-    backgroundColor: '#0F172A',
+    zIndex: 9999,
+    backgroundColor: '#075A4E',
     borderRadius: radius.md,
-    paddingHorizontal: spacing(4),
-    paddingVertical: spacing(3),
+    paddingVertical: spacing(2.5),
+    paddingHorizontal: spacing(3.5),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 6,
   },
   toastText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '600',
     flex: 1,
     marginRight: spacing(2),
@@ -434,8 +434,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   toastCloseText: {
-    color: '#94A3B8',
-    fontSize: 13,
+    color: '#A7F3D0',
+    fontSize: 14,
     fontWeight: '700',
   },
   container: {

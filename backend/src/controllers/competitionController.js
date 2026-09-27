@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const Competition = require('../models/Competition');
 const Registration = require('../models/Registration');
 const Submission = require('../models/Submission');
+const Winner = require('../models/Winner');
+const Testimonial = require('../models/Testimonial');
 const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
 const { getCompetitionState, getUserAction } = require('../utils/competitionState');
@@ -180,22 +182,35 @@ const getCompetitionDetails = asyncHandler(async (req, res) => {
 
   const userAction = getUserAction({ state, registration, submission });
 
+  const compId = competition._id;
+  const previousWinners = await Winner.find({ competitionId: compId })
+    .sort({ year: -1, position: 1 })
+    .lean();
+
+  const totalSpots = competition.totalSpots || competition.maxParticipants || 20;
+  const spotsBooked = competition.spotsBooked || 0;
+  const spotsLeft = Math.max(totalSpots - spotsBooked, 0);
+  const availableSpots = spotsLeft;
+
   res.json({
     success: true,
     data: {
       id: competition._id,
       title: competition.title,
-      tags: competition.tags,
+      category: competition.category || 'Classical Dance',
+      tags: competition.tags || [],
       hasCertificateForWinners: competition.hasCertificateForWinners,
 
       prizePool: competition.prizePool,
       entryFee: competition.entryFee,
-      currency: competition.currency,
+      currency: competition.currency || 'INR',
 
       capacity: {
-        totalSpots: competition.totalSpots,
-        spotsBooked: competition.spotsBooked,
-        spotsLeft: competition.spotsLeft,
+        totalSpots,
+        maxParticipants: totalSpots,
+        spotsBooked,
+        spotsLeft,
+        availableSpots,
       },
 
       judge: competition.judge,
@@ -203,17 +218,18 @@ const getCompetitionDetails = asyncHandler(async (req, res) => {
       dates: {
         registrationOpensAt: competition.registrationOpensAt,
         registrationClosesAt: competition.registrationClosesAt,
+        registrationStart: competition.registrationOpensAt,
+        registrationEnd: competition.registrationClosesAt,
         submissionStartsAt: competition.submissionStartsAt,
         submissionEndsAt: competition.submissionEndsAt,
+        submissionStart: competition.submissionStartsAt,
+        submissionEnd: competition.submissionEndsAt,
         resultDate: competition.resultDate,
-        // The client should NEVER trust its own device clock for a
-        // countdown against a shared deadline -- it drifts and can be
-        // spoofed. We hand back our server time so the app can compute
-        // an offset and render an accurate, tamper-resistant countdown.
         serverTime: now,
       },
 
-      state, // e.g. "REGISTRATION_OPEN" -- drives non-CTA UI (badges, banners)
+      state, // e.g. "REGISTRATION_OPEN"
+      status: state,
       countdownTargetAt:
         state === 'UPCOMING'
           ? competition.registrationOpensAt
@@ -225,20 +241,21 @@ const getCompetitionDetails = asyncHandler(async (req, res) => {
           ? competition.submissionEndsAt
           : null,
 
-      about: competition.aboutText,
-      judgingParameters: competition.judgingParameters,
-      rulesAndEligibility: competition.rulesAndEligibility,
+      about: competition.aboutText || competition.description || '',
+      description: competition.aboutText || competition.description || '',
+      judgingParameters: competition.judgingParameters || [],
+      rulesAndEligibility: competition.rulesAndEligibility || competition.rules || '',
+      rules: competition.rules || competition.rulesAndEligibility || '',
+      eligibility: competition.eligibility || competition.rulesAndEligibility || '',
 
-      rewards: competition.rewards,
-      previousWinners: competition.previousWinners,
+      rewards: competition.rewards || [],
+      previousWinners: previousWinners || [],
       disclaimerText: competition.disclaimerText,
       prizeMoneyInfoVideoUrl: competition.prizeMoneyInfoVideoUrl,
 
       referral: req.userId
         ? {
             earnAmountPerSignup: competition.referral?.earnAmountPerSignup || 0,
-            // In production this is looked up from the User document's
-            // own referralCode, not stored per-competition.
             shareLink: `https://feedants.com/r/${req.userId}`,
           }
         : null,
@@ -256,64 +273,58 @@ const getCompetitionDetails = asyncHandler(async (req, res) => {
           : null,
       },
 
-      action: userAction, // { label, enabled, action }
+      action: userAction,
     },
   });
 });
 
 /**
  * GET /api/competitions/:id/winners
- * Kept as a separate, cacheable, lightweight endpoint since "previous
- * winners" data changes far less often than live capacity/state and a
- * client might want to refresh it independently (e.g. a "see all" screen).
+ * Returns previous winners for this competition from the real Winner collection.
  */
 const getPreviousWinners = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const competition = await Competition.findById(id).select('previousWinners').lean();
-  if (!competition) throw new ApiError(404, 'Competition not found');
-  res.json({ success: true, data: competition.previousWinners });
+  let compId = id;
+  if (!mongoose.isValidObjectId(id)) {
+    const comp = await Competition.findOne({
+      $or: [{ slug: id }, { title: new RegExp(id.replace(/-/g, ' '), 'i') }],
+      isPublished: true,
+    }).select('_id').lean();
+    if (comp) compId = comp._id;
+  }
+  let winners = await Winner.find({ competitionId: compId }).sort({ year: -1, position: 1 }).lean();
+  res.json({ success: true, data: winners || [] });
 });
 
 /**
  * GET /api/competitions/:id/reviews
- * Returns verified participant reviews and ratings for this competition.
+ * Returns real participant reviews and testimonials from MongoDB.
  */
 const getReviews = asyncHandler(async (req, res) => {
-  const reviews = [
-    {
-      id: 'rev_1',
-      author: 'Ananya Sharma',
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
-      rating: 5,
-      date: '2 days ago',
-      comment:
-        'Feedants gave me an amazing platform to share my Kathak performance with thousands of classical dance lovers across India! The judging feedback from Manju Dubey was super insightful.',
-    },
-    {
-      id: 'rev_2',
-      author: 'Rohan Mukherjee',
-      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop&q=80',
-      rating: 5,
-      date: '1 week ago',
-      comment:
-        'Great judging panel, completely fair evaluation, and seamless prize distribution directly to UPI within 24 hours of result declaration!',
-    },
-    {
-      id: 'rev_3',
-      author: 'Pooja Hegde',
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
-      rating: 5,
-      date: '2 weeks ago',
-      comment:
-        'Participating in Feedants Classical Dance was one of the best experiences of my dance journey. Verified certificates for winners helped build my portfolio!',
-    },
-  ];
+  const testimonials = await Testimonial.find({ isPublished: true })
+    .sort({ createdAt: -1 })
+    .limit(20)
+    .lean();
+
+  const reviews = testimonials.map((t) => ({
+    id: String(t._id),
+    author: t.name,
+    avatar: t.avatarUrl || null,
+    rating: t.rating || 5,
+    date: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'Recent',
+    comment: typeof t.text === 'object' ? t.text?.en || t.text?.hi || '' : (t.text || ''),
+  }));
+
+  const averageRating =
+    reviews.length > 0
+      ? Number((reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1))
+      : 5.0;
 
   res.json({
     success: true,
     data: {
-      averageRating: 4.9,
-      totalReviews: 128,
+      averageRating,
+      totalReviews: reviews.length,
       reviews,
     },
   });

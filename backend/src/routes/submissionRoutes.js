@@ -33,4 +33,16 @@ router.post(
   uploadSubmission
 );
 
+router.post(
+  '/:id/submission',
+  requireAuth,
+  upload.single('file'),
+  validate([
+    param('id').isString().trim().notEmpty(),
+    body('mediaUrl').optional().isURL(),
+    body('mediaType').optional().isIn(['video', 'image']),
+  ]),
+  uploadSubmission
+);
+
 module.exports = router;

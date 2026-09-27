@@ -22,8 +22,80 @@ const login = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    data: { token, user: { id: user._id, name: user.name, email: user.email } },
+    data: {
+      token,
+      user: {
+        _id: user._id,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        profileImage: user.profileImage || user.photoUrl || null,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    },
   });
 });
 
-module.exports = { login };
+const getMe = asyncHandler(async (req, res) => {
+  let user;
+  if (req.userId) {
+    user = await User.findById(req.userId);
+  }
+  if (!user) {
+    user = await User.findOne().sort({ createdAt: 1 });
+  }
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  res.json({
+    success: true,
+    data: {
+      _id: user._id,
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      profileImage: user.profileImage || user.photoUrl || null,
+      referralCode: user.referralCode,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    },
+  });
+});
+
+const updateMe = asyncHandler(async (req, res) => {
+  const { name, profileImage, email } = req.body;
+  let user;
+  if (req.userId) {
+    user = await User.findById(req.userId);
+  }
+  if (!user) {
+    user = await User.findOne().sort({ createdAt: 1 });
+  }
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  if (name && name.trim()) user.name = name.trim();
+  if (profileImage !== undefined) user.profileImage = profileImage;
+  if (email && email.trim()) user.email = email.trim();
+
+  await user.save();
+
+  res.json({
+    success: true,
+    message: 'Profile updated successfully',
+    data: {
+      _id: user._id,
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      profileImage: user.profileImage || user.photoUrl || null,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    },
+  });
+});
+
+module.exports = { login, getMe, updateMe };

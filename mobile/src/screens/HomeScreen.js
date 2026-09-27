@@ -11,8 +11,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../theme';
 import BottomNavBar from '../components/BottomNavBar';
 import ProfileAvatar from '../components/ProfileAvatar';
+import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useCompetition } from '../hooks/useCompetition';
 
 export default function HomeScreen({ navigation }) {
+  const { user } = useCurrentUser();
+  const { data: compData } = useCompetition('feedants-classical-dance');
+  const comp = compData?.competition;
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -29,7 +35,12 @@ export default function HomeScreen({ navigation }) {
             activeOpacity={0.8}
             accessibilityLabel="View Profile"
           >
-            <ProfileAvatar name="Swapnit Patel" size={38} fontSize={17} />
+            <ProfileAvatar
+              name={user?.name}
+              imageUrl={user?.profileImage || user?.photoUrl}
+              size={38}
+              fontSize={17}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -44,12 +55,20 @@ export default function HomeScreen({ navigation }) {
         >
           <View style={styles.badgeRow}>
             <View style={styles.badge}><Text style={styles.badgeText}>🔥 Trending</Text></View>
-            <View style={styles.badgeGreen}><Text style={styles.badgeGreenText}>Open for Submissions</Text></View>
+            <View style={styles.badgeGreen}>
+              <Text style={styles.badgeGreenText}>
+                {comp?.status === 'UPCOMING' ? 'Upcoming' : 'Open for Submissions'}
+              </Text>
+            </View>
           </View>
-          <Text style={styles.cardTitle}>Feedants Classical Dance</Text>
-          <Text style={styles.cardDesc}>Showcase your classical dance skills to win from ₹1,500 prize pool.</Text>
+          <Text style={styles.cardTitle}>{comp?.title || 'Feedants Classical Dance'}</Text>
+          <Text style={styles.cardDesc}>
+            {comp?.description || 'Showcase your classical dance skills to win from the prize pool.'}
+          </Text>
           <View style={styles.cardFooter}>
-            <Text style={styles.prizeText}>Prize Pool: ₹1,500</Text>
+            <Text style={styles.prizeText}>
+              Prize Pool: ₹{comp?.prizePool ? comp.prizePool.toLocaleString('en-IN') : '1,500'}
+            </Text>
             <View style={{ flexDirection: 'row', gap: spacing(2) }}>
               <TouchableOpacity
                 style={styles.uploadBtn}

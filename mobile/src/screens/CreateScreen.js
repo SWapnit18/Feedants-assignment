@@ -14,7 +14,10 @@ import { colors, radius, spacing } from '../theme';
 import BottomNavBar from '../components/BottomNavBar';
 import ProfileAvatar from '../components/ProfileAvatar';
 
+import { useCurrentUser } from '../hooks/useCurrentUser';
+
 export default function CreateScreen({ navigation }) {
+  const { user } = useCurrentUser();
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Classical Dance');
   const [prizePool, setPrizePool] = useState('1500');
@@ -49,7 +52,12 @@ export default function CreateScreen({ navigation }) {
           activeOpacity={0.8}
           accessibilityLabel="View Profile"
         >
-          <ProfileAvatar name="Swapnit Patel" size={34} fontSize={15} />
+          <ProfileAvatar
+            name={user?.name}
+            imageUrl={user?.profileImage || user?.photoUrl}
+            size={34}
+            fontSize={15}
+          />
         </TouchableOpacity>
       </View>
 

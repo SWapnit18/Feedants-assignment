@@ -1,61 +1,30 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
-
-const TESTIMONIALS = [
-  {
-    quote:
-      'Amazing platform! The organization and judging process was very professional.',
-    author: 'Riya Shah',
-    subtitle: '1st Winner 2024',
-    avatar:
-      'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    quote:
-      'The feedback from Manju Dubey ma’am helped me refine my footwork and expressions.',
-    author: 'Neha Verma',
-    subtitle: '2nd Winner 2024',
-    avatar:
-      'https://images.unsplash.com/photo-1547153760-18fc86324498?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    quote:
-      'Instant prize payout through Razorpay without any hassle. Loved the entire journey!',
-    author: 'Ishita Choudhary',
-    subtitle: '3rd Winner 2024',
-    avatar:
-      'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    quote:
-      'Great exposure for classical dancers across India. A must-participate competition.',
-    author: 'Aditi Sharma',
-    subtitle: '4th Winner 2024',
-    avatar:
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80',
-  },
-];
-
 import { t } from '../utils/i18n';
+import ProfileAvatar from './ProfileAvatar';
 
-export default function UserFeedbackCard({ onOpenAll, lang = 'ENG' }) {
+export default function UserFeedbackCard({ testimonials = [], onOpenAll, lang = 'ENG' }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const hasTestimonials = Array.isArray(testimonials) && testimonials.length > 0;
+
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : TESTIMONIALS.length - 1));
+    if (!hasTestimonials) return;
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : testimonials.length - 1));
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev < TESTIMONIALS.length - 1 ? prev + 1 : 0));
+    if (!hasTestimonials) return;
+    setCurrentIndex((prev) => (prev < testimonials.length - 1 ? prev + 1 : 0));
   };
 
-  const current = TESTIMONIALS[currentIndex];
+  const current = hasTestimonials ? testimonials[currentIndex] : null;
 
   return (
     <View style={styles.container}>
-      {/* 1. Main Collapsed Row matching the exact screenshot */}
+      {/* 1. Main Collapsed Row */}
       <TouchableOpacity
         style={styles.bannerRow}
         onPress={() => setIsExpanded((v) => !v)}
@@ -69,48 +38,68 @@ export default function UserFeedbackCard({ onOpenAll, lang = 'ENG' }) {
         <Text style={styles.arrowIcon}>{isExpanded ? '⌃' : '›'}</Text>
       </TouchableOpacity>
 
-      {/* 2. Expanded Carousel */}
+      {/* 2. Expanded Carousel or Real Empty State */}
       {isExpanded && (
         <View style={styles.expandedWrapper}>
-          <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.navArrowBtn}
-              onPress={handlePrev}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.navArrowText}>‹</Text>
-            </TouchableOpacity>
-
-            <View style={styles.contentCol}>
-              <View style={styles.quoteRow}>
-                <Image source={{ uri: current.avatar }} style={styles.avatar} />
-                <View style={styles.textGroup}>
-                  <Text style={styles.quoteText}>"{current.quote}"</Text>
-                  <Text style={styles.authorText}>{current.author}</Text>
-                  <Text style={styles.subtitleText}>{current.subtitle}</Text>
-                </View>
-              </View>
+          {!hasTestimonials ? (
+            /* Real Empty State: Requirement #15 & #20 */
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>No testimonials yet.</Text>
+              <Text style={styles.emptySubtext}>
+                Reviews and feedback from participants will appear here once submitted.
+              </Text>
             </View>
+          ) : (
+            <>
+              <View style={styles.card}>
+                <TouchableOpacity
+                  style={styles.navArrowBtn}
+                  onPress={handlePrev}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.navArrowText}>‹</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.navArrowBtn}
-              onPress={handleNext}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.navArrowText}>›</Text>
-            </TouchableOpacity>
-          </View>
+                <View style={styles.contentCol}>
+                  <View style={styles.quoteRow}>
+                    {current.avatar || current.photoUrl ? (
+                      <Image source={{ uri: current.avatar || current.photoUrl }} style={styles.avatar} />
+                    ) : (
+                      <ProfileAvatar name={current.author || current.userName || current.name} size={40} fontSize={16} style={{ marginRight: spacing(2) }} />
+                    )}
+                    <View style={styles.textGroup}>
+                      <Text style={styles.quoteText}>"{current.quote || current.comment || current.text}"</Text>
+                      <Text style={styles.authorText}>{current.author || current.userName || current.name}</Text>
+                      {current.subtitle ? (
+                        <Text style={styles.subtitleText}>{current.subtitle}</Text>
+                      ) : null}
+                    </View>
+                  </View>
+                </View>
 
-          {/* Pagination Dots */}
-          <View style={styles.paginationDots}>
-            {TESTIMONIALS.map((_, idx) => (
-              <TouchableOpacity
-                key={idx}
-                onPress={() => setCurrentIndex(idx)}
-                style={[styles.dot, idx === currentIndex && styles.dotActive]}
-              />
-            ))}
-          </View>
+                <TouchableOpacity
+                  style={styles.navArrowBtn}
+                  onPress={handleNext}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.navArrowText}>›</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Pagination Dots */}
+              {testimonials.length > 1 && (
+                <View style={styles.paginationDots}>
+                  {testimonials.map((_, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      onPress={() => setCurrentIndex(idx)}
+                      style={[styles.dot, idx === currentIndex && styles.dotActive]}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
+          )}
         </View>
       )}
     </View>
@@ -162,6 +151,26 @@ const styles = StyleSheet.create({
   },
   expandedWrapper: {
     marginTop: spacing(2.5),
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingVertical: spacing(4),
+    paddingHorizontal: spacing(3.5),
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  emptySubtext: {
+    fontSize: 11.5,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
   card: {
     backgroundColor: '#FFFFFF',

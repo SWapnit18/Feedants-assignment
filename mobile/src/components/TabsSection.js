@@ -14,62 +14,72 @@ export default function TabsSection({ about, judgingParameters, rulesAndEligibil
     { key: 'rules', label: t(lang, 'tabRules') },
   ];
 
-  const JUDGING_CRITERIA = [
-    {
-      title: t(lang, 'techniqueTitle'),
-      desc: t(lang, 'techniqueSub'),
-      weight: '25%',
-      progress: 0.25,
-      icon: '👣',
-      iconBg: '#F3E8FF',
-      barColor: '#9333EA',
-    },
-    {
-      title: t(lang, 'expressionTitle'),
-      desc: t(lang, 'expressionSub'),
-      weight: '20%',
-      progress: 0.20,
-      icon: '🎭',
-      iconBg: '#FFEDD5',
-      barColor: '#F97316',
-    },
-    {
-      title: t(lang, 'creativityTitle'),
-      desc: t(lang, 'creativitySub'),
-      weight: '20%',
-      progress: 0.20,
-      icon: '💡',
-      iconBg: '#DCFCE7',
-      barColor: '#16A34A',
-    },
-    {
-      title: t(lang, 'presentationTitle'),
-      desc: t(lang, 'presentationSub'),
-      weight: '15%',
-      progress: 0.15,
-      icon: '🧘',
-      iconBg: '#FCE7F3',
-      barColor: '#DB2777',
-    },
-    {
-      title: t(lang, 'rhythmTitle'),
-      desc: t(lang, 'rhythmSub'),
-      weight: '10%',
-      progress: 0.10,
-      icon: '🎵',
-      iconBg: '#E0F2FE',
-      barColor: '#0284C7',
-    },
-    {
-      title: t(lang, 'overallTitle'),
-      desc: t(lang, 'overallSub'),
-      weight: '10%',
-      progress: 0.10,
-      icon: '⭐',
-      iconBg: '#FEF9C3',
-      barColor: '#EAB308',
-    },
-  ];
+  const ICONS = ['👣', '🎭', '💡', '🧘', '🎵', '⭐'];
+  const BG_COLORS = ['#F3E8FF', '#FFEDD5', '#DCFCE7', '#FCE7F3', '#E0F2FE', '#FEF9C3'];
+  const BAR_COLORS = ['#9333EA', '#F97316', '#16A34A', '#DB2777', '#0284C7', '#EAB308'];
+
+  const criteriaList = Array.isArray(judgingParameters) && judgingParameters.length > 0
+    ? judgingParameters.map((p, idx) => {
+        const pct = Number(p.percentage) || 0;
+        return {
+          title: p.name,
+          desc: p.description,
+          weight: `${pct}%`,
+          progress: pct / 100,
+          icon: ICONS[idx % ICONS.length],
+          iconBg: BG_COLORS[idx % BG_COLORS.length],
+          barColor: BAR_COLORS[idx % BAR_COLORS.length],
+        };
+      })
+    : [
+        {
+          title: t(lang, 'techniqueTitle'),
+          desc: t(lang, 'techniqueSub'),
+          weight: '25%',
+          progress: 0.25,
+          icon: '👣',
+          iconBg: '#F3E8FF',
+          barColor: '#9333EA',
+        },
+        {
+          title: t(lang, 'expressionTitle'),
+          desc: t(lang, 'expressionSub'),
+          weight: '25%',
+          progress: 0.25,
+          icon: '🎭',
+          iconBg: '#FFEDD5',
+          barColor: '#F97316',
+        },
+        {
+          title: t(lang, 'creativityTitle'),
+          desc: t(lang, 'creativitySub'),
+          weight: '20%',
+          progress: 0.20,
+          icon: '💡',
+          iconBg: '#DCFCE7',
+          barColor: '#16A34A',
+        },
+        {
+          title: t(lang, 'presentationTitle'),
+          desc: t(lang, 'presentationSub'),
+          weight: '15%',
+          progress: 0.15,
+          icon: '🧘',
+          iconBg: '#FCE7F3',
+          barColor: '#DB2777',
+        },
+        {
+          title: t(lang, 'rhythmTitle'),
+          desc: t(lang, 'rhythmSub'),
+          weight: '15%',
+          progress: 0.15,
+          icon: '🎵',
+          iconBg: '#E0F2FE',
+          barColor: '#0284C7',
+        },
+      ];
+
+  const totalPercentage = criteriaList.reduce((acc, c) => acc + Math.round(c.progress * 100), 0);
 
   const RULES_DATA = lang === 'हिंदी' ? [
     {
@@ -165,7 +175,7 @@ export default function TabsSection({ about, judgingParameters, rulesAndEligibil
       {/* Tab 2: Judging Parameters */}
       {activeTab === 'judging' && (
         <View style={styles.judgingContainer}>
-          {JUDGING_CRITERIA.map((item, index) => (
+          {criteriaList.map((item, index) => (
             <View key={index} style={styles.criteriaCard}>
               <View style={[styles.iconBox, { backgroundColor: item.iconBg }]}>
                 <Text style={styles.iconText}>{item.icon}</Text>

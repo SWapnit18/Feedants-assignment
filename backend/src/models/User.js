@@ -13,11 +13,19 @@ const UserSchema = new Schema(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
-    photoUrl: { type: String },
+    profileImage: { type: String, default: null },
+    photoUrl: { type: String, default: null },
     referralCode: { type: String, unique: true, default: () => nanoid(8) },
   },
   { timestamps: true }
 );
+
+UserSchema.virtual('avatar').get(function() {
+  return this.profileImage || this.photoUrl || null;
+});
+
+UserSchema.set('toJSON', { virtuals: true });
+UserSchema.set('toObject', { virtuals: true });
 
 UserSchema.methods.comparePassword = function comparePassword(candidate) {
   return bcrypt.compare(candidate, this.passwordHash);

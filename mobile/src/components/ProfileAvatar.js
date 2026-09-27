@@ -15,7 +15,7 @@ import { colors } from '../theme';
  * 5. Handles empty/null/undefined names gracefully.
  */
 export default function ProfileAvatar({
-  name = 'Swapnit Patel',
+  name = '',
   imageUrl = null,
   size = 40,
   fontSize,
@@ -27,9 +27,9 @@ export default function ProfileAvatar({
 
   // Dynamically extract the first letter of user's first name in uppercase
   const getInitial = () => {
-    if (!name || typeof name !== 'string') return 'U';
+    if (!name || typeof name !== 'string') return '👤';
     const trimmed = name.trim();
-    if (!trimmed) return 'U';
+    if (!trimmed) return '👤';
     return trimmed.charAt(0).toUpperCase();
   };
 

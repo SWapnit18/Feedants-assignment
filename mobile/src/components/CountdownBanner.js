@@ -25,21 +25,30 @@ const STATE_LABELS_HI = {
   RESULTS_DECLARED: 'परिणाम घोषित',
 };
 
-export default function CountdownBanner({ state, targetAt, serverOffsetMs, onExpire, lang = 'ENG' }) {
-  const [now, setNow] = useState(Date.now());
+export default function CountdownBanner({ state, targetAt, serverOffsetMs = 0, onExpire, lang = 'ENG' }) {
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    const id = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 1000);
     return () => clearInterval(id);
   }, []);
 
   const labelMap = lang === 'हिंदी' ? STATE_LABELS_HI : STATE_LABELS_ENG;
-  const labelText = labelMap[state] || t(lang, 'registrationClosesIn');
   const countdown = formatCountdown(targetAt, serverOffsetMs);
 
-  if (countdown?.isExpired && onExpire) {
-    onExpire();
-  }
+  const isExpired = countdown?.isExpired || state === 'REGISTRATION_FULL';
+
+  useEffect(() => {
+    if (isExpired && onExpire) {
+      onExpire();
+    }
+  }, [isExpired, onExpire]);
+
+  const labelText = isExpired
+    ? (lang === 'हिंदी' ? 'पंजीकरण बंद' : 'Registration Closed')
+    : (labelMap[state] || (lang === 'हिंदी' ? 'पंजीकरण समाप्त होने में' : 'Registration closes in'));
 
   return (
     <View style={styles.banner}>
@@ -50,13 +59,17 @@ export default function CountdownBanner({ state, targetAt, serverOffsetMs, onExp
         <Text style={styles.label}>{labelText}</Text>
       </View>
 
-      <Text style={styles.countdown}>{countdown?.label || '01d : 06h : 28m : 32s'}</Text>
+      <Text style={styles.countdown}>
+        {isExpired ? (lang === 'हिंदी' ? 'पंजीकरण समाप्त' : 'Registration Closed') : (countdown?.label || '--:--:--')}
+      </Text>
 
       <View style={styles.rightGroup}>
         <View style={styles.iconWrapper}>
           <StopwatchOutlineIcon size={14} color="#0F766E" />
         </View>
-        <Text style={styles.hurry}>{t(lang, 'hurryUp')}</Text>
+        <Text style={styles.hurry}>
+          {isExpired ? '' : t(lang, 'hurryUp')}
+        </Text>
       </View>
     </View>
   );
