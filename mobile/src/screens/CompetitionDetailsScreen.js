@@ -30,6 +30,8 @@ import BottomActionBar from '../components/BottomActionBar';
 import BottomNavBar from '../components/BottomNavBar';
 import SubmissionModal from '../components/SubmissionModal';
 import PolicyModal from '../components/PolicyModal';
+import RegistrationModal from '../components/RegistrationModal';
+import NavigationSheet from '../components/NavigationSheet';
 
 export default function CompetitionDetailsScreen({ route, navigation }) {
   const competitionId = route?.params?.competitionId;
@@ -41,10 +43,19 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
 
   const [busyAction, setBusyAction] = useState(null);
   const [submissionModalVisible, setSubmissionModalVisible] = useState(false);
+  const [registrationModalVisible, setRegistrationModalVisible] = useState(false);
+  const [navigationSheetVisible, setNavigationSheetVisible] = useState(false);
+  const [selectedNavTab, setSelectedNavTab] = useState('home');
   const [selectedLanguage, setSelectedLanguage] = useState('ENG');
   const [activeBottomNavTab, setActiveBottomNavTab] = useState('competitions');
   const [policyModalVisible, setPolicyModalVisible] = useState(false);
   const [activePolicyType, setActivePolicyType] = useState('refund');
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
 
   const serverOffsetMs = useMemo(
     () => (competition ? computeServerOffsetMs(competition.dates.serverTime) : 0),
@@ -77,18 +88,24 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
   }
 
   const handleAction = async (actionType) => {
+    if (actionType === 'REGISTER') {
+      setRegistrationModalVisible(true);
+    } else if (actionType === 'SUBMIT' || actionType === 'RESUBMIT') {
+      setSubmissionModalVisible(true);
+    } else if (actionType === 'VIEW_RESULTS') {
+      showToast('🏆 Winners announced on the Leaderboard tab!');
+    }
+  };
+
+  const handleConfirmRegistration = async (paymentMethod) => {
     try {
-      if (actionType === 'REGISTER') {
-        setBusyAction('REGISTER');
-        await registerMutation.mutateAsync({});
-        Alert.alert('Registration Successful! 🎉', "You're registered for Feedants Classical Dance!");
-      } else if (actionType === 'SUBMIT' || actionType === 'RESUBMIT') {
-        setSubmissionModalVisible(true);
-      } else if (actionType === 'VIEW_RESULTS') {
-        Alert.alert('Results Declared', 'Winners have been announced on the leaderboard!');
-      }
+      setBusyAction('REGISTER');
+      await registerMutation.mutateAsync({ paymentMethod });
+      setRegistrationModalVisible(false);
+      showToast("🎉 Registration Successful! You're enrolled in Feedants Classical Dance!");
+      refetch();
     } catch (err) {
-      Alert.alert('Notice', err.message || 'Please try again.');
+      showToast(err.message || 'Registration failed. Please retry.');
     } finally {
       setBusyAction(null);
     }
@@ -102,9 +119,10 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         mediaType: submissionData.mediaType,
       });
       setSubmissionModalVisible(false);
-      Alert.alert('Entry Submitted! 🌟', 'Your performance entry has been successfully submitted for judging.');
+      showToast('🌟 Entry Submitted! Your performance was sent for judging.');
+      refetch();
     } catch (err) {
-      Alert.alert('Submission Error', err.message || 'Could not upload submission.');
+      showToast(err.message || 'Could not upload submission.');
     } finally {
       setBusyAction(null);
     }
@@ -113,10 +131,8 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
   const handleBottomNav = (tabKey) => {
     setActiveBottomNavTab(tabKey);
     if (tabKey !== 'competitions') {
-      Alert.alert(
-        tabKey.toUpperCase(),
-        `Navigating to ${tabKey} tab.`
-      );
+      setSelectedNavTab(tabKey);
+      setNavigationSheetVisible(true);
     }
   };
 
@@ -124,11 +140,23 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
+      {/* Floating In-App Toast Notification Banner */}
+      {toastMessage && (
+        <View style={styles.toastBanner}>
+          <Text style={styles.toastText}>{toastMessage}</Text>
+          <TouchableOpacity onPress={() => setToastMessage(null)} style={styles.toastClose}>
+            <Text style={styles.toastCloseText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Top Header with Back Button and Language Pill Toggle */}
       <View style={styles.topHeader}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation?.goBack?.()}
+          onPress={() => {
+            showToast('Navigation: Returning to Competition Feed');
+          }}
           activeOpacity={0.7}
         >
           <Text style={styles.backArrow}>←</Text>
@@ -142,7 +170,10 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
               styles.langOption,
               selectedLanguage === 'ENG' && styles.langOptionActive,
             ]}
-            onPress={() => setSelectedLanguage('ENG')}
+            onPress={() => {
+              setSelectedLanguage('ENG');
+              showToast('Language switched to English');
+            }}
             activeOpacity={0.8}
           >
             <Text
@@ -160,7 +191,10 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
               styles.langOption,
               selectedLanguage === 'हिंदी' && styles.langOptionActive,
             ]}
-            onPress={() => setSelectedLanguage('हिंदी')}
+            onPress={() => {
+              setSelectedLanguage('हिंदी');
+              showToast('भाषा बदलकर हिंदी कर दी गई है');
+            }}
             activeOpacity={0.8}
           >
             <Text
@@ -248,6 +282,15 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         onTabPress={handleBottomNav}
       />
 
+      {/* Registration & Checkout Modal */}
+      <RegistrationModal
+        visible={registrationModalVisible}
+        competition={competition}
+        onClose={() => setRegistrationModalVisible(false)}
+        onConfirm={handleConfirmRegistration}
+        isRegistering={busyAction === 'REGISTER'}
+      />
+
       {/* Submission Modal */}
       <SubmissionModal
         visible={submissionModalVisible}
@@ -262,11 +305,55 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         policyType={activePolicyType}
         onClose={() => setPolicyModalVisible(false)}
       />
+
+      {/* Interactive Bottom Nav Sheet */}
+      <NavigationSheet
+        visible={navigationSheetVisible}
+        tabKey={selectedNavTab}
+        onClose={() => {
+          setNavigationSheetVisible(false);
+          setActiveBottomNavTab('competitions');
+        }}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  toastBanner: {
+    position: 'absolute',
+    top: 55,
+    left: spacing(4),
+    right: spacing(4),
+    zIndex: 999,
+    backgroundColor: '#0F172A',
+    borderRadius: radius.md,
+    paddingHorizontal: spacing(4),
+    paddingVertical: spacing(3),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+    marginRight: spacing(2),
+  },
+  toastClose: {
+    padding: 4,
+  },
+  toastCloseText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
