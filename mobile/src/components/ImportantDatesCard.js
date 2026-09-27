@@ -108,12 +108,13 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 13,
     fontWeight: '700',
-    color: colors.text,
+    color: colors.primary,
     marginTop: 2,
   },
   time: {
     fontSize: 11,
-    color: colors.textMuted,
+    color: colors.text,
+    fontWeight: '600',
     marginTop: 1,
   },
 });

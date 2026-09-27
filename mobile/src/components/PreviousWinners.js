@@ -40,12 +40,14 @@ export default function PreviousWinners({ winners = [] }) {
                 <Text style={styles.playIcon}>▶</Text>
               </View>
             </View>
-            <Text style={styles.name} numberOfLines={1}>
-              {w.name}
-            </Text>
-            <Text style={styles.position}>
-              {ORDINALS[w.position] || `${w.position}th Winner`}
-            </Text>
+            <View style={styles.infoCol}>
+              <Text style={styles.name} numberOfLines={1}>
+                {w.name}
+              </Text>
+              <Text style={styles.position}>
+                {ORDINALS[w.position] || `${w.position}th Winner`}
+              </Text>
+            </View>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -84,17 +86,24 @@ const styles = StyleSheet.create({
   },
   row: {
     paddingHorizontal: spacing(4),
-    paddingTop: spacing(2.5),
+    paddingTop: spacing(2),
     paddingBottom: spacing(1),
   },
   item: {
-    width: 90,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: spacing(1.5),
     marginRight: spacing(3),
+    width: 150,
   },
   photoContainer: {
-    width: 90,
-    height: 90,
-    borderRadius: radius.md,
+    width: 54,
+    height: 54,
+    borderRadius: radius.sm,
     overflow: 'hidden',
     backgroundColor: '#E2E8F0',
     position: 'relative',
@@ -105,33 +114,36 @@ const styles = StyleSheet.create({
   },
   playBadge: {
     position: 'absolute',
-    bottom: 6,
-    right: 6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    bottom: 3,
+    right: 3,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: 'rgba(15, 124, 108, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#fff',
   },
   playIcon: {
     color: '#fff',
-    fontSize: 9,
+    fontSize: 8,
     marginLeft: 1,
+  },
+  infoCol: {
+    flex: 1,
+    marginLeft: spacing(2),
   },
   name: {
     fontSize: 12,
     fontWeight: '700',
     color: colors.text,
-    marginTop: spacing(1.5),
   },
   position: {
     fontSize: 11,
     color: colors.primary,
     fontWeight: '600',
-    marginTop: 1,
+    marginTop: 2,
   },
   modalContainer: {
     flex: 1,
