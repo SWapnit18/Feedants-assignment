@@ -7,6 +7,7 @@ const validate = require('../middleware/validate');
 const router = express.Router();
 
 router.get('/', optionalAuth, getCompetitions);
+router.get('/featured', optionalAuth, getCompetitions);
 
 router.get(
   '/:id',
