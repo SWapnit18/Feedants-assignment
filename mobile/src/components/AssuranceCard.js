@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { Video } from 'expo-av';
 import { colors, radius, spacing } from '../theme';
+import { ShieldOutlineIcon } from './MinimalIcons';
 
 import { t } from '../utils/i18n';
 
@@ -34,7 +35,9 @@ export default function AssuranceCard({ videoUrl, onOpenPolicy, lang = 'ENG' }) 
           onPress={() => onOpenPolicy?.('refund')}
           activeOpacity={0.7}
         >
-          <Text style={styles.shieldIcon}>🛡️</Text>
+          <View style={{ marginRight: 6 }}>
+            <ShieldOutlineIcon size={14} color="#0F766E" />
+          </View>
           <Text style={styles.policyText}>{t(lang, 'refundPolicy')}</Text>
         </TouchableOpacity>
 
@@ -43,7 +46,9 @@ export default function AssuranceCard({ videoUrl, onOpenPolicy, lang = 'ENG' }) 
           onPress={() => onOpenPolicy?.('privacy')}
           activeOpacity={0.7}
         >
-          <Text style={styles.shieldIcon}>🛡️</Text>
+          <View style={{ marginRight: 6, marginTop: 2 }}>
+            <ShieldOutlineIcon size={14} color="#0F766E" />
+          </View>
           <View style={styles.razorpayGroup}>
             <Text style={styles.secureText}>{t(lang, 'secureRazorpay')}</Text>
             <Text style={styles.razorpayBrand}>

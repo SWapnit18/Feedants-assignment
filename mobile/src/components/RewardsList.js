@@ -1,17 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
-
-const ICONS = {
-  1: '🏆',
-  2: '🥈',
-  3: '🥉',
-  4: '⭐',
-  5: '⭐',
-  6: '⭐',
-};
-
 import { t } from '../utils/i18n';
+import {
+  RewardTrophyIcon,
+  RewardMedalSilverIcon,
+  RewardMedalBronzeIcon,
+  RewardStarOutlineIcon,
+  InfoCircleOutlineIcon,
+} from './MinimalIcons';
 
 const WINNER_KEYS = {
   1: 'firstWinner',
@@ -22,12 +19,23 @@ const WINNER_KEYS = {
   6: 'sixthWinner',
 };
 
-import { RewardStarOutlineIcon } from './MinimalIcons';
-
 export default function RewardsList({ rewards = [], currency = 'INR', disclaimerText, lang = 'ENG' }) {
   if (!rewards.length) return null;
 
   const displayDisclaimer = lang === 'हिंदी' ? t(lang, 'disclaimer') : (disclaimerText || t('ENG', 'disclaimer'));
+
+  const renderRewardIcon = (pos) => {
+    switch (pos) {
+      case 1:
+        return <RewardTrophyIcon size={20} />;
+      case 2:
+        return <RewardMedalSilverIcon size={20} />;
+      case 3:
+        return <RewardMedalBronzeIcon size={20} />;
+      default:
+        return <RewardStarOutlineIcon size={18} color="#0F766E" />;
+    }
+  };
 
   return (
     <View style={styles.card}>
@@ -38,16 +46,11 @@ export default function RewardsList({ rewards = [], currency = 'INR', disclaimer
       {rewards.map((r, index) => {
         const winnerKey = WINNER_KEYS[r.position];
         const label = winnerKey ? t(lang, winnerKey) : (r.label || `${r.position}th Winner`);
-        const isStar = r.position >= 4;
 
         return (
           <View key={r.position || index} style={styles.row}>
             <View style={styles.iconBox}>
-              {isStar ? (
-                <RewardStarOutlineIcon size={18} color="#0F766E" />
-              ) : (
-                <Text style={styles.icon}>{ICONS[r.position] || '🏆'}</Text>
-              )}
+              {renderRewardIcon(r.position)}
             </View>
             <Text style={styles.label}>{label}</Text>
             <Text style={styles.amount}>
@@ -59,7 +62,9 @@ export default function RewardsList({ rewards = [], currency = 'INR', disclaimer
 
       {displayDisclaimer && (
         <View style={styles.disclaimer}>
-          <Text style={styles.disclaimerIcon}>ⓘ</Text>
+          <View style={styles.disclaimerIconBox}>
+            <InfoCircleOutlineIcon size={15} color="#0F766E" />
+          </View>
           <Text style={styles.disclaimerText}>
             {displayDisclaimer}
           </Text>
@@ -108,9 +113,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
-  icon: {
-    fontSize: 16,
-  },
   label: {
     fontSize: 13,
     color: colors.text,
@@ -132,21 +134,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D4EFEA',
   },
-  disclaimerIcon: {
+  disclaimerIconBox: {
     marginRight: spacing(2),
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '700',
-    marginTop: -1,
+    marginTop: 1,
   },
   disclaimerText: {
     fontSize: 11.5,
     color: '#09554A',
     flex: 1,
     lineHeight: 16,
-  },
-  disclaimerBold: {
-    fontWeight: '700',
-    color: colors.primary,
   },
 });

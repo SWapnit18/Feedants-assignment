@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../theme';
 import BottomNavBar from '../components/BottomNavBar';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 export default function HomeScreen({ navigation }) {
   return (
@@ -18,8 +19,19 @@ export default function HomeScreen({ navigation }) {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Feedants Home</Text>
-        <Text style={styles.headerSubtitle}>Discover trending talent competitions</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View>
+            <Text style={styles.headerTitle}>Feedants Home</Text>
+            <Text style={styles.headerSubtitle}>Discover trending talent competitions</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => navigation?.navigate('Profile')}
+            activeOpacity={0.8}
+            accessibilityLabel="View Profile"
+          >
+            <ProfileAvatar name="Swapnit Patel" size={38} fontSize={17} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Content */}

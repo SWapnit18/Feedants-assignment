@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 import { formatCountdown } from '../utils/dateUtils';
-
 import { t } from '../utils/i18n';
+import { HourglassOutlineIcon, StopwatchOutlineIcon } from './MinimalIcons';
 
 const STATE_LABELS_ENG = {
   UPCOMING: 'Registration opens in',
@@ -44,14 +44,18 @@ export default function CountdownBanner({ state, targetAt, serverOffsetMs, onExp
   return (
     <View style={styles.banner}>
       <View style={styles.leftGroup}>
-        <Text style={styles.hourglassIcon}>⏳</Text>
+        <View style={styles.iconWrapper}>
+          <HourglassOutlineIcon size={14} color="#0F766E" />
+        </View>
         <Text style={styles.label}>{labelText}</Text>
       </View>
 
       <Text style={styles.countdown}>{countdown?.label || '01d : 06h : 28m : 32s'}</Text>
 
       <View style={styles.rightGroup}>
-        <Text style={styles.hurryIcon}>⏱️</Text>
+        <View style={styles.iconWrapper}>
+          <StopwatchOutlineIcon size={14} color="#0F766E" />
+        </View>
         <Text style={styles.hurry}>{t(lang, 'hurryUp')}</Text>
       </View>
     </View>
@@ -76,9 +80,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  hourglassIcon: {
-    fontSize: 12,
+  iconWrapper: {
     marginRight: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   label: {
     color: colors.text,
@@ -96,10 +101,6 @@ const styles = StyleSheet.create({
   rightGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  hurryIcon: {
-    fontSize: 11,
-    marginRight: 3,
   },
   hurry: {
     color: colors.primary,

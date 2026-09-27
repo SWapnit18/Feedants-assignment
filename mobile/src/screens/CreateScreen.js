@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../theme';
 import BottomNavBar from '../components/BottomNavBar';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 export default function CreateScreen({ navigation }) {
   const [title, setTitle] = useState('');
@@ -33,14 +34,23 @@ export default function CreateScreen({ navigation }) {
 
       {/* Header with Back Button */}
       <View style={styles.header}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => navigation?.goBack()}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.backArrow}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Host Competition (+)</Text>
+        </View>
         <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation?.goBack()}
-          activeOpacity={0.7}
+          onPress={() => navigation?.navigate('Profile')}
+          activeOpacity={0.8}
+          accessibilityLabel="View Profile"
         >
-          <Text style={styles.backArrow}>←</Text>
+          <ProfileAvatar name="Swapnit Patel" size={34} fontSize={15} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Host Competition (+)</Text>
       </View>
 
       {/* Content Form */}

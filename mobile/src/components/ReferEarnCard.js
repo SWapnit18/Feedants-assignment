@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Share, StyleSheet } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { colors, radius, spacing } from '../theme';
+import { MegaphoneOutlineIcon } from './MinimalIcons';
 
 import { t } from '../utils/i18n';
 
@@ -29,7 +30,7 @@ export default function ReferEarnCard({ referral, lang = 'ENG' }) {
   return (
     <View style={styles.card}>
       <View style={styles.iconContainer}>
-        <Text style={styles.icon}>📢</Text>
+        <MegaphoneOutlineIcon size={18} color="#0F766E" />
       </View>
 
       <View style={styles.body}>

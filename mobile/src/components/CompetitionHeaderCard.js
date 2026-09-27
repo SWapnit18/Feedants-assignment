@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 
+import { CertificateTrophyIcon, UsersOutlineIcon } from './MinimalIcons';
 import { t } from '../utils/i18n';
 
 export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
@@ -54,7 +55,9 @@ export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
 
         {hasCertificateForWinners && (
           <View style={styles.certificateRow}>
-            <Text style={styles.trophyIcon}>🏆</Text>
+            <View style={{ marginRight: 5, marginTop: 1 }}>
+              <CertificateTrophyIcon size={14} color="#0F766E" />
+            </View>
             <Text style={styles.certificateText}>{t(lang, 'winnersCertificate')}</Text>
           </View>
         )}
@@ -81,7 +84,9 @@ export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
         {/* Spots Left Progress */}
         <View style={styles.spotsCol}>
           <View style={styles.spotsHeader}>
-            <Text style={styles.spotsIcon}>👥</Text>
+            <View style={{ marginRight: 5, marginTop: 1 }}>
+              <UsersOutlineIcon size={14} color="#0F766E" />
+            </View>
             <Text style={styles.spotsLeftText}>
               {spotsLeft > 0 ? t(lang, 'spotsLeft', { count: spotsLeft }) : 'All spots booked'}
             </Text>
