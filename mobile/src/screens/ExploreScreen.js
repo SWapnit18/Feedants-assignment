@@ -14,20 +14,19 @@ import { colors, radius, spacing } from '../theme';
 import BottomNavBar from '../components/BottomNavBar';
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { useCompetition } from '../hooks/useCompetition';
+import { useCompetitionDetails } from '../hooks/useCompetitionDetails';
 
 export default function ExploreScreen({ navigation }) {
   const { user } = useCurrentUser();
-  const { data: compData, isLoading } = useCompetition('feedants-classical-dance');
-  const comp = compData?.competition;
+  const { data: comp, isLoading } = useCompetitionDetails();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
   const categories = ['All', 'Classical Dance', 'Bollywood', 'Contemporary', 'Folk', 'Vocals'];
 
-  const spotsLeft = comp?.capacity?.spotsLeft ?? (comp ? comp.totalSpots - comp.spotsBooked : null);
-  const totalSpots = comp?.capacity?.totalSpots ?? comp?.totalSpots ?? 20;
+  const spotsLeft = comp?.availability?.remaining ?? null;
+  const totalSpots = comp?.availability?.capacity ?? null;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -102,11 +101,11 @@ export default function ExploreScreen({ navigation }) {
               <View style={{ flex: 1, paddingRight: spacing(2) }}>
                 <Text style={styles.cardTitle}>{comp.title}</Text>
                 <Text style={styles.judgeSubtitle}>
-                  Judge: {comp.judge?.name || 'Verified Expert'} {comp.judge?.profession ? `(${comp.judge.profession})` : ''}
+                  Judge: {comp.judge?.name || 'Not assigned'} {comp.judge?.profession ? `(${comp.judge.profession})` : ''}
                 </Text>
               </View>
               <View style={styles.feeBadge}>
-                <Text style={styles.feeText}>₹{comp.entryFee} Fee</Text>
+                <Text style={styles.feeText}>₹{comp.entryFee ?? '—'} Fee</Text>
               </View>
             </View>
             <View style={styles.metricsRow}>

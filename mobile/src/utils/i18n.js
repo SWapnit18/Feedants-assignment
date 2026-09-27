@@ -11,7 +11,7 @@ export const translations = {
     create: 'Host (+)',
 
     // Competition Main Card
-    title: 'Feedants Classical Dance',
+    title: 'Competition',
     tagDance: 'Dance',
     tagMultiWin: 'Multi-Win',
     winnersCertificate: 'Winners get certificate',
@@ -102,7 +102,7 @@ export const translations = {
     uploadSubmission: 'Upload Submission',
     registerNow: 'Register Now',
     payAndSecure: 'Pay ₹99 & Secure Your Spot',
-    registrationSuccess: "🎉 Registration Successful! You're enrolled in Feedants Classical Dance!",
+    registrationSuccess: 'Registration successful.',
     submissionSuccess: '🌟 Entry Submitted! Your performance was sent for judging.',
   },
 

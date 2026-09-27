@@ -1,7 +1,11 @@
 const ApiError = require('../utils/ApiError');
+const { AppError } = require('../utils/AppError');
 
 // eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
+  if (err instanceof AppError) {
+    return res.status(err.status).json({ error: { code: err.code, message: err.message, ...(err.details !== undefined ? { details: err.details } : {}) } });
+  }
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({
       success: false,

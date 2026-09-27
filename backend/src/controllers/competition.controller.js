@@ -12,6 +12,10 @@ async function getDetails(req, res) {
   res.json(body);
 }
 
+async function list(req, res) {
+  res.json(await competitionService.listCompetitions(req.valid.query.lang));
+}
+
 async function getAvailability(req, res) {
   const body = await competitionService.getAvailability(req.valid.params.idOrSlug);
   // ETag over the state only (serverTime changes every call) so pollers get cheap 304s.
@@ -42,4 +46,4 @@ async function getMySubmission(req, res) {
   res.json(await submissionService.getMySubmission(req.user.id, req.valid.params.idOrSlug));
 }
 
-module.exports = { getDetails, getAvailability, getTestimonials, register, createSubmission, getMySubmission };
+module.exports = { list, getDetails, getAvailability, getTestimonials, register, createSubmission, getMySubmission };

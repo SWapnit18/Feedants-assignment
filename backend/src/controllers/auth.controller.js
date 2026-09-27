@@ -15,8 +15,12 @@ async function me(req, res) {
   res.json(await authService.getUser(req.user.id));
 }
 
+async function updateMe(req, res) {
+  res.json(await authService.updateUser(req.user.id, req.valid.body));
+}
+
 async function referral(req, res) {
   res.json(await referralService.getReferralSummary(req.user.id));
 }
 
-module.exports = { devLogin, listUsers, me, referral };
+module.exports = { devLogin, listUsers, me, updateMe, referral };

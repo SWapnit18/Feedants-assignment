@@ -11,6 +11,7 @@ const { mutationLimiter } = require('../middleware/rateLimit');
 const router = Router();
 const params = z.object({ idOrSlug: schemas.idOrSlug });
 
+router.get('/', validate({ query: z.object({ lang: schemas.lang }) }), ctrl.list);
 router.get('/:idOrSlug', optionalAuth, validate({ params, query: z.object({ lang: schemas.lang }) }), ctrl.getDetails);
 
 router.get('/:idOrSlug/availability', validate({ params }), ctrl.getAvailability);

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  fetchCompetitions,
   fetchCompetitionDetails,
   registerForCompetition,
   uploadSubmission,
@@ -11,7 +12,10 @@ const POLL_INTERVAL_MS = 15000;
 export function useCompetitionDetails(competitionId) {
   return useQuery({
     queryKey: key(competitionId),
-    queryFn: () => fetchCompetitionDetails(competitionId),
+    queryFn: async () => {
+      const selectedId = competitionId || (await fetchCompetitions())[0]?.slug;
+      return fetchCompetitionDetails(selectedId);
+    },
     refetchInterval: POLL_INTERVAL_MS,
     refetchOnWindowFocus: true,
   });

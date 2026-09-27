@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const ApiError = require('../utils/ApiError');
+const { AppError } = require('../utils/AppError');
 
 function decodeToken(req) {
   const header = req.headers.authorization || '';
@@ -18,8 +19,9 @@ function decodeToken(req) {
  */
 function requireAuth(req, res, next) {
   const payload = decodeToken(req);
-  if (!payload) throw new ApiError(401, 'Authentication required');
+  if (!payload) throw new AppError('UNAUTHENTICATED', 'Authentication required');
   req.userId = payload.sub;
+  req.user = { id: payload.sub };
   next();
 }
 
@@ -30,7 +32,10 @@ function requireAuth(req, res, next) {
  */
 function optionalAuth(req, res, next) {
   const payload = decodeToken(req);
-  if (payload) req.userId = payload.sub;
+  if (payload) {
+    req.userId = payload.sub;
+    req.user = { id: payload.sub };
+  }
   next();
 }
 

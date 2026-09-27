@@ -4,27 +4,26 @@ import { Video } from 'expo-av';
 import { colors, radius, spacing } from '../theme';
 
 import { t } from '../utils/i18n';
-
-const MANJU_DUBEY_PHOTO = require('../../assets/manju_dubey.jpg');
+import ProfileAvatar from './ProfileAvatar';
 
 export default function JudgeCard({ judge, lang = 'ENG' }) {
   const [playing, setPlaying] = useState(false);
   if (!judge) return null;
 
   const roleLabel = t(lang, 'judgeLabel');
-  const name = lang === 'हिंदी' ? t(lang, 'judgeName') : (judge.name || 'Manju Dubey');
-  const exp1 = lang === 'हिंदी' ? t(lang, 'judgeRole') : (judge.experienceLabel?.split('·')[0] || 'Professional Kathak Dancer');
-  const exp2 = lang === 'हिंदी' ? t(lang, 'judgeExp') : (judge.experienceLabel?.split('·')[1]?.trim() || '12+ Years of Experience');
+  const name = lang === 'हिंदी' ? t(lang, 'judgeName') : judge.name;
+  const exp1 = lang === 'हिंदी' ? t(lang, 'judgeRole') : (judge.experienceLabel?.split('·')[0] || judge.profession || '');
+  const exp2 = lang === 'हिंदी' ? t(lang, 'judgeExp') : (judge.experienceLabel?.split('·')[1]?.trim() || judge.experience || '');
 
-  const isOldPhoto = !judge.photoUrl || judge.photoUrl.includes('1534528741775');
-  const photoSource = isOldPhoto ? MANJU_DUBEY_PHOTO : { uri: judge.photoUrl };
+  const photoSource = judge.photoUrl ? { uri: judge.photoUrl } : null;
 
   return (
     <View style={styles.card}>
-      <Image
-        source={photoSource}
-        style={styles.avatar}
-      />
+      {photoSource ? (
+        <Image source={photoSource} style={styles.avatar} />
+      ) : (
+        <ProfileAvatar name={judge.name} size={60} fontSize={24} style={styles.avatar} />
+      )}
       <View style={styles.info}>
         <Text style={styles.roleLabel}>{roleLabel}</Text>
         <Text style={styles.name}>{name}</Text>
@@ -35,6 +34,7 @@ export default function JudgeCard({ judge, lang = 'ENG' }) {
       <TouchableOpacity
         style={styles.playButton}
         onPress={() => setPlaying(true)}
+        disabled={!judge.introVideoUrl}
         activeOpacity={0.8}
       >
         <View style={styles.playCircle}>
@@ -51,9 +51,7 @@ export default function JudgeCard({ judge, lang = 'ENG' }) {
           <View style={styles.videoWrapper}>
             <Video
               source={{
-                uri:
-                  judge.introVideoUrl ||
-                  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                uri: judge.introVideoUrl,
               }}
               style={styles.video}
               useNativeControls

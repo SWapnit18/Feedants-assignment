@@ -29,14 +29,7 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
   const [performanceTitle, setPerformanceTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState({
-    name: 'classical_dance_solo_2026.mp4',
-    size: '48.2 MB',
-    duration: '04:32',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    thumbnail: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&auto=format&fit=crop&q=80',
-    isUserUploaded: false,
-  });
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const scrollViewRef = useRef(null);
 
@@ -136,7 +129,7 @@ export default function SubmissionModal({ visible, onClose, onSubmit, isSubmitti
   const handleFinalSubmit = () => {
     setCurrentStep(3);
     onSubmit({
-      title: performanceTitle.trim() || 'Classical Dance Performance',
+      title: performanceTitle.trim(),
       description: description.trim(),
       mediaUrl: selectedVideo.url,
       mediaType: 'video',

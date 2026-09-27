@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const dns = require('dns');
+const config = require('./index');
 
 // Fix for Windows / serverless DNS resolution for MongoDB Atlas SRV (_mongodb._tcp) records
 try {
@@ -14,9 +15,9 @@ let cachedPromise = null;
  * Establish or reuse cached MongoDB connection (optimized for both long-running and serverless Vercel runtimes).
  */
 async function connectDB() {
-  const uri = process.env.MONGO_URI;
+  const uri = config.mongoUri || process.env.MONGO_URI;
   if (!uri) {
-    throw new Error('MONGO_URI is not defined in the environment');
+    throw new Error('MONGODB_URI or MONGO_URI is not defined in the environment');
   }
 
   if (mongoose.connection.readyState === 1) {
@@ -42,4 +43,10 @@ async function connectDB() {
   return mongoose.connection;
 }
 
+async function ensureIndexes() {
+  const models = require('../models');
+  await Promise.all(Object.values(models).map((model) => model.syncIndexes()));
+}
+
 module.exports = connectDB;
+module.exports.ensureIndexes = ensureIndexes;

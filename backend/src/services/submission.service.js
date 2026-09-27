@@ -12,20 +12,15 @@ const { findCompetition, serializeSubmission } = require('./competition.service'
  */
 async function createSubmission(userId, idOrSlug, { mediaUrl, caption }) {
   const competition = await findCompetition(idOrSlug, { projection: 'status dates' });
+  const lifecycle = computeLifecycle(competition, new Date());
+  if (!lifecycle.submissionOpen) throw new AppError('SUBMISSION_WINDOW_CLOSED', 'Submissions are not open for this competition');
 
   let registration = await Registration.findOne({
     competitionId: competition._id,
     userId,
     status: 'confirmed',
   }).lean();
-
-  if (!registration) {
-    registration = await Registration.findOneAndUpdate(
-      { competitionId: competition._id, userId },
-      { $set: { status: 'confirmed', holdExpiresAt: null } },
-      { upsert: true, new: true }
-    ).lean();
-  }
+  if (!registration) throw new AppError('NOT_REGISTERED', 'You must complete registration before submitting');
 
   try {
     const submission = await Submission.create({
@@ -34,17 +29,12 @@ async function createSubmission(userId, idOrSlug, { mediaUrl, caption }) {
       registrationId: registration._id,
       mediaUrl,
       caption: caption ?? null,
+      status: 'received',
     });
     return { submission: serializeSubmission(submission.toObject()) };
   } catch (err) {
     if (isDuplicateKeyError(err)) {
-      // Allow user to update their submission with a new video performance
-      const updated = await Submission.findOneAndUpdate(
-        { competitionId: competition._id, userId },
-        { mediaUrl, caption: caption ?? null, submittedAt: new Date() },
-        { new: true }
-      );
-      return { submission: serializeSubmission(updated.toObject()) };
+      throw new AppError('ALREADY_SUBMITTED', 'You have already submitted an entry');
     }
     throw err;
   }

@@ -60,7 +60,7 @@ const POLICY_CONTENT = {
     sections: [
       {
         heading: '1. Eligibility & Entry Rules',
-        body: 'The Feedants Classical Dance competition is open to all age categories. Each registered participant may submit one original performance video up to 3 minutes in length.',
+        body: 'Review the competition rules and organizer policy before registering or submitting an entry.',
       },
       {
         heading: '2. Originality & Copyright',

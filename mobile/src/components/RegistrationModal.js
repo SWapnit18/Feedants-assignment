@@ -38,7 +38,7 @@ export default function RegistrationModal({
             <Text style={styles.eventName}>{competition.title}</Text>
             <View style={styles.badgeRow}>
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>🏆 ₹{competition.prizePool?.toLocaleString?.() || 1500} Prize Pool</Text>
+                <Text style={styles.badgeText}>🏆 ₹{competition.prizePool?.toLocaleString?.() || '—'} Prize Pool</Text>
               </View>
               <View style={[styles.badge, styles.badgeTeal]}>
                 <Text style={[styles.badgeText, styles.badgeTealText]}>
@@ -51,7 +51,7 @@ export default function RegistrationModal({
           <View style={styles.feeBreakdown}>
             <View style={styles.feeRow}>
               <Text style={styles.feeLabel}>Entry Fee</Text>
-              <Text style={styles.feeVal}>₹{competition.entryFee || 99}</Text>
+              <Text style={styles.feeVal}>₹{competition.entryFee ?? '—'}</Text>
             </View>
             <View style={styles.feeRow}>
               <Text style={styles.feeLabel}>Platform & Processing</Text>
@@ -60,7 +60,7 @@ export default function RegistrationModal({
             <View style={styles.divider} />
             <View style={styles.feeRow}>
               <Text style={styles.totalLabel}>Total Payable</Text>
-              <Text style={styles.totalVal}>₹{competition.entryFee || 99}</Text>
+              <Text style={styles.totalVal}>₹{competition.entryFee ?? '—'}</Text>
             </View>
           </View>
 
@@ -101,7 +101,7 @@ export default function RegistrationModal({
             {isRegistering ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.payButtonText}>Pay ₹{competition.entryFee || 99} & Register</Text>
+              <Text style={styles.payButtonText}>Pay ₹{competition.entryFee ?? '—'} & Register</Text>
             )}
           </TouchableOpacity>
         </Pressable>

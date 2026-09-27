@@ -13,10 +13,18 @@ const { Schema } = mongoose;
  */
 const RegistrationSchema = new Schema(
   {
-    competition: { type: Schema.Types.ObjectId, ref: 'Competition', required: true },
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    competition: { type: Schema.Types.ObjectId, ref: 'Competition' },
+    user: { type: Schema.Types.ObjectId, ref: 'User' },
+    competitionId: { type: Schema.Types.ObjectId, ref: 'Competition' },
+    userId: { type: Schema.Types.ObjectId, ref: 'User' },
 
-    entryFeePaid: { type: Number, required: true, min: 0 },
+    entryFeePaid: { type: Number, min: 0 },
+    amount: { type: Number, min: 0 },
+    currency: { type: String, default: 'INR' },
+    orderId: { type: String },
+    holdExpiresAt: { type: Date },
+    confirmedAt: { type: Date },
+    releasedAt: { type: Date },
     paymentId: { type: String }, // Razorpay payment/order id in production
     paymentStatus: {
       type: String,
@@ -27,7 +35,7 @@ const RegistrationSchema = new Schema(
 
     status: {
       type: String,
-      enum: ['active', 'cancelled'],
+      enum: ['active', 'pending_payment', 'confirmed', 'expired', 'cancelled', 'refunded'],
       default: 'active',
     },
   },
@@ -42,5 +50,22 @@ RegistrationSchema.index(
   { unique: true, partialFilterExpression: { status: 'active' } }
 );
 RegistrationSchema.index({ competition: 1, createdAt: -1 });
+RegistrationSchema.index(
+  { competitionId: 1, userId: 1 },
+  { unique: true, partialFilterExpression: { status: { $in: ['pending_payment', 'confirmed'] } } },
+);
+RegistrationSchema.index({ status: 1, holdExpiresAt: 1 });
 
-module.exports = mongoose.model('Registration', RegistrationSchema);
+RegistrationSchema.pre('validate', function syncRegistrationFields(next) {
+  if (!this.competition && this.competitionId) this.competition = this.competitionId;
+  if (!this.user && this.userId) this.user = this.userId;
+  if (!this.competitionId && this.competition) this.competitionId = this.competition;
+  if (!this.userId && this.user) this.userId = this.user;
+  if (this.amount == null && this.entryFeePaid != null) this.amount = this.entryFeePaid;
+  if (this.entryFeePaid == null && this.amount != null) this.entryFeePaid = this.amount;
+  next();
+});
+
+const Registration = mongoose.model('Registration', RegistrationSchema);
+Registration.ACTIVE_STATUSES = ['pending_payment', 'confirmed'];
+module.exports = Registration;

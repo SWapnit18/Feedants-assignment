@@ -1,28 +1,48 @@
 import client from './client';
 
-export async function fetchCompetitionDetails(competitionId) {
-  const targetId = competitionId && competitionId !== 'REPLACE_WITH_SEEDED_COMPETITION_ID'
-    ? competitionId
-    : 'feedants-classical-dance';
+const unwrap = (data) => data?.data || data;
+const idempotencyKey = () =>
+  globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  const { data } = await client.get(`/competitions/${targetId}`);
-  return data.data || data;
+export async function fetchCompetitions() {
+  const { data } = await client.get('/competitions');
+  return unwrap(data).items || [];
+}
+
+export async function fetchCompetitionDetails(competitionId) {
+  if (!competitionId) throw new Error('No competition was selected.');
+
+  const { data } = await client.get(`/competitions/${competitionId}`);
+  const body = unwrap(data);
+  const competition = body.competition || {};
+  return {
+    ...competition,
+    availability: body.availability,
+    lifecycle: body.lifecycle,
+    viewer: body.viewer,
+    action: body.viewer?.primaryAction || body.anonymousAction,
+    dates: { ...competition.dates, serverTime: body.serverTime },
+    state: body.lifecycle?.phase,
+    countdownTargetAt: body.lifecycle?.nextDeadline?.at || null,
+    about: competition.tabs?.about || '',
+    judgingParameters: competition.tabs?.judgingParameters || [],
+    rulesAndEligibility: competition.tabs?.rulesAndEligibility || [],
+    disclaimerText: competition.disclaimer || '',
+    prizeMoneyInfoVideoUrl: competition.prizeInfoVideoUrl || null,
+  };
 }
 
 export async function registerForCompetition(competitionId, payload = {}) {
-  const targetId = competitionId && competitionId !== 'REPLACE_WITH_SEEDED_COMPETITION_ID'
-    ? competitionId
-    : 'feedants-classical-dance';
-
-  // Real backend endpoint is POST /api/competitions/:id/register
-  const { data } = await client.post(`/competitions/${targetId}/register`, payload);
-  return data.data || data;
+  if (!competitionId) throw new Error('No competition was selected.');
+  const { data } = await client.post(`/competitions/${competitionId}/registrations`, payload, {
+    headers: { 'Idempotency-Key': idempotencyKey() },
+  });
+  return unwrap(data);
 }
 
 export async function uploadSubmission(competitionId, { mediaUrl, mediaType = 'video', title, description, file, fileName, fileSize }) {
-  const targetId = competitionId && competitionId !== 'REPLACE_WITH_SEEDED_COMPETITION_ID'
-    ? competitionId
-    : 'feedants-classical-dance';
+  if (!competitionId) throw new Error('No competition was selected.');
+  if (!file && !mediaUrl) throw new Error('Select a submission file before continuing.');
 
   let finalUrl = mediaUrl;
 
@@ -34,42 +54,32 @@ export async function uploadSubmission(competitionId, { mediaUrl, mediaType = 'v
       const { data: uploadData } = await client.post('/uploads', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      if (uploadData?.url) {
-        finalUrl = uploadData.url;
-      }
-    } catch (_uploadErr) {
-      // Continue with provided mediaUrl if direct upload fails
+      finalUrl = unwrap(uploadData).url;
+    } catch (uploadError) {
+      throw uploadError;
     }
   }
 
-  const endpoint = `/competitions/${targetId}/submissions`;
-  const { data } = await client.post(endpoint, {
-    videoUrl: finalUrl || mediaUrl,
-    mediaUrl: finalUrl || mediaUrl,
-    title: title || 'Classical Dance Performance',
-    description: description || '',
-    mediaType: mediaType || 'video',
-    fileName: fileName || file?.name || 'performance.mp4',
-    fileSize: fileSize || file?.size || 0,
-    submittedAt: new Date().toISOString(),
+  const { data } = await client.post(`/competitions/${competitionId}/submissions`, {
+    mediaUrl: finalUrl,
+    caption: [title, description].filter(Boolean).join('\n') || undefined,
   });
 
-  return data.data || data;
+  return unwrap(data);
 }
 
 export async function fetchPreviousWinners(competitionId) {
-  const targetId = competitionId || 'feedants-classical-dance';
-  const { data } = await client.get(`/competitions/${targetId}/winners`);
-  return data.data || data || [];
+  const details = await fetchCompetitionDetails(competitionId);
+  return details.previousWinners || [];
 }
 
 export async function fetchReviews(competitionId) {
-  const targetId = competitionId || 'feedants-classical-dance';
-  const { data } = await client.get(`/competitions/${targetId}/reviews`);
-  return data.data || data || [];
+  if (!competitionId) return [];
+  const { data } = await client.get(`/competitions/${competitionId}/testimonials`);
+  return unwrap(data).items || [];
 }
 
 export async function login(email, password) {
   const { data } = await client.post('/auth/login', { email, password });
-  return data.data || data;
+  return unwrap(data);
 }

@@ -66,17 +66,13 @@ export default function AssuranceCard({ videoUrl, onOpenPolicy, lang = 'ENG' }) 
             <Text style={styles.closeText}>✕ Close</Text>
           </TouchableOpacity>
           <View style={styles.videoWrapper}>
-            <Video
-              source={{
-                uri:
-                  videoUrl ||
-                  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-              }}
+              {videoUrl ? <Video
+              source={{ uri: videoUrl }}
               style={styles.video}
               useNativeControls
               resizeMode="contain"
               shouldPlay
-            />
+            /> : null}
           </View>
         </View>
       </Modal>

@@ -1,6 +1,6 @@
 'use strict';
 
-const { Competition, Registration, Submission, Testimonial } = require('../models');
+const { Competition, Registration, Submission, Testimonial, Winner } = require('../models');
 const { ACTIVE_STATUSES } = require('../models/Registration');
 const { AppError } = require('../utils/AppError');
 const { isObjectId } = require('../utils/ids');
@@ -11,6 +11,31 @@ const { releaseExpiredHolds } = require('./registration.service');
 
 const VISIBLE_STATUSES = ['published', 'cancelled'];
 const iso = (d) => (d ? new Date(d).toISOString() : null);
+
+async function listCompetitions(lang = 'en') {
+  const competitions = await Competition.find({ status: 'published' })
+    .sort({ 'dates.registrationClosesAt': 1, createdAt: -1 })
+    .select('_id slug title category tags status dates')
+    .lean();
+
+  return {
+    items: competitions.map((c) => ({
+      id: String(c._id),
+      slug: c.slug || String(c._id),
+      title: t(c.title, lang),
+      category: c.category,
+      tags: c.tags || [],
+      status: c.status,
+      dates: {
+        registrationOpensAt: iso(c.dates?.registrationOpensAt),
+        registrationClosesAt: iso(c.dates?.registrationClosesAt),
+        submissionStartsAt: iso(c.dates?.submissionStartsAt),
+        submissionEndsAt: iso(c.dates?.submissionEndsAt),
+        resultAt: iso(c.dates?.resultAt),
+      },
+    })),
+  };
+}
 
 /**
  * Look up a visible competition by ObjectId or slug.
@@ -25,7 +50,17 @@ async function findCompetition(idOrSlug, opts = {}) {
 }
 
 /** Map a competition document to the public, language-resolved DTO. */
-function serializeCompetition(c, lang) {
+function serializeCompetition(c, lang, winners = c.previousWinners || []) {
+  const localizedList = (values) => {
+    if (typeof values === 'string') return [values];
+    return (values || []).map((value) => {
+      if (typeof value === 'string') return value;
+      if (value?.name && value?.percentage != null) {
+        return `${t(value.name, lang)} (${value.percentage}%)${value.description ? `: ${t(value.description, lang)}` : ''}`;
+      }
+      return t(value, lang);
+    }).filter(Boolean);
+  };
   return {
     id: String(c._id),
     slug: c.slug,
@@ -52,7 +87,7 @@ function serializeCompetition(c, lang) {
       submissionEndsAt: iso(c.dates.submissionEndsAt),
       resultAt: iso(c.dates.resultAt),
     },
-    previousWinners: (c.previousWinners || []).map((w) => ({
+    previousWinners: winners.map((w) => ({
       id: String(w._id),
       name: w.name,
       positionLabel: t(w.positionLabel, lang),
@@ -62,8 +97,8 @@ function serializeCompetition(c, lang) {
     })),
     tabs: {
       about: t(c.about, lang),
-      judgingParameters: (c.judgingParameters || []).map((p) => t(p, lang)),
-      rulesAndEligibility: (c.rules || []).map((r) => t(r, lang)),
+      judgingParameters: localizedList(c.judgingParameters),
+      rulesAndEligibility: localizedList(c.rules || c.rulesAndEligibility),
     },
     rewards: [...(c.rewards || [])]
       .sort((a, b) => a.position - b.position)
@@ -86,8 +121,8 @@ const serializeSubmission = (s) =>
         id: String(s._id),
         status: s.status,
         mediaUrl: s.mediaUrl,
-        caption: s.caption ?? null,
-        submittedAt: iso(s.createdAt),
+        caption: s.caption ?? s.description ?? null,
+        submittedAt: iso(s.submittedAt || s.createdAt),
       }
     : null;
 
@@ -102,6 +137,7 @@ async function getCompetitionDetails(idOrSlug, userId, lang) {
 
   let registration = null;
   let submission = null;
+  const winners = await Winner.find({ competitionId: competition._id }).sort({ year: -1, position: 1 }).lean();
   if (userId) {
     // Lazily release this viewer's own lapsed hold so their CTA is correct
     // immediately rather than after the next sweeper tick.
@@ -120,7 +156,7 @@ async function getCompetitionDetails(idOrSlug, userId, lang) {
 
   const body = {
     serverTime: now.toISOString(),
-    competition: serializeCompetition(competition, lang),
+    competition: serializeCompetition(competition, lang, winners),
     availability,
     lifecycle,
     viewer: null,
@@ -166,6 +202,7 @@ async function listTestimonials(idOrSlug, limit, lang) {
 }
 
 module.exports = {
+  listCompetitions,
   findCompetition,
   getCompetitionDetails,
   getAvailability,

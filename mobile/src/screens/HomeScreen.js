@@ -12,12 +12,11 @@ import { colors, radius, spacing } from '../theme';
 import BottomNavBar from '../components/BottomNavBar';
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { useCompetition } from '../hooks/useCompetition';
+import { useCompetitionDetails } from '../hooks/useCompetitionDetails';
 
 export default function HomeScreen({ navigation }) {
   const { user } = useCurrentUser();
-  const { data: compData } = useCompetition('feedants-classical-dance');
-  const comp = compData?.competition;
+  const { data: comp } = useCompetitionDetails();
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -57,17 +56,17 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.badge}><Text style={styles.badgeText}>🔥 Trending</Text></View>
             <View style={styles.badgeGreen}>
               <Text style={styles.badgeGreenText}>
-                {comp?.status === 'UPCOMING' ? 'Upcoming' : 'Open for Submissions'}
+                {comp?.lifecycle?.phase || 'Unavailable'}
               </Text>
             </View>
           </View>
-          <Text style={styles.cardTitle}>{comp?.title || 'Feedants Classical Dance'}</Text>
+          <Text style={styles.cardTitle}>{comp?.title || 'Competition unavailable'}</Text>
           <Text style={styles.cardDesc}>
-            {comp?.description || 'Showcase your classical dance skills to win from the prize pool.'}
+            {comp?.description || 'Competition information is currently unavailable.'}
           </Text>
           <View style={styles.cardFooter}>
             <Text style={styles.prizeText}>
-              Prize Pool: ₹{comp?.prizePool ? comp.prizePool.toLocaleString('en-IN') : '1,500'}
+              Prize Pool: ₹{comp?.prizePool == null ? '—' : comp.prizePool.toLocaleString('en-IN')}
             </Text>
             <View style={{ flexDirection: 'row', gap: spacing(2) }}>
               <TouchableOpacity

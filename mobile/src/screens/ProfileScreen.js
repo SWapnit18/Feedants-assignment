@@ -15,11 +15,11 @@ import { colors, radius, spacing } from '../theme';
 import BottomNavBar from '../components/BottomNavBar';
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { useCompetition } from '../hooks/useCompetition';
+import { useCompetitionDetails } from '../hooks/useCompetitionDetails';
 
 export default function ProfileScreen({ navigation }) {
   const { user, isLoading, updateUser, isUpdating } = useCurrentUser();
-  const { data: compData } = useCompetition('feedants-classical-dance');
+  const { data: compData } = useCompetitionDetails();
 
   const [isEditing, setIsEditing] = useState(false);
   const [nameInput, setNameInput] = useState('');
@@ -27,7 +27,7 @@ export default function ProfileScreen({ navigation }) {
 
   const displayName = user?.name || '';
   const displayEmail = user?.email || '';
-  const isRegistered = compData?.user?.isRegistered ?? false;
+  const isRegistered = ['confirmed', 'pending_payment'].includes(compData?.viewer?.registration?.status);
 
   const handleStartEdit = () => {
     setNameInput(displayName);
@@ -81,7 +81,7 @@ export default function ProfileScreen({ navigation }) {
                 style={{ marginBottom: spacing(2.5) }}
               />
               <View style={styles.nameRow}>
-                <Text style={styles.userName}>{displayName || 'Feedants User'}</Text>
+                <Text style={styles.userName}>{displayName}</Text>
                 <TouchableOpacity
                   style={styles.editBtn}
                   onPress={handleStartEdit}
@@ -123,13 +123,13 @@ export default function ProfileScreen({ navigation }) {
             activeOpacity={0.85}
           >
             <View style={styles.compCardHeader}>
-              <Text style={styles.compCardTitle}>{compData?.competition?.title || 'Feedants Classical Dance'}</Text>
+              <Text style={styles.compCardTitle}>{compData.title}</Text>
               <View style={styles.registeredPill}>
                 <Text style={styles.registeredText}>✓ Registered</Text>
               </View>
             </View>
             <Text style={styles.compCardSub}>
-              {compData?.competition?.category || 'Classical Dance'} • Entry Fee: ₹{compData?.competition?.entryFee || 99}
+              {compData.category} • Entry Fee: ₹{Math.round((compData.entryFee || 0) / 100)}
             </Text>
             <Text style={styles.viewLink}>View Competition Page →</Text>
           </TouchableOpacity>

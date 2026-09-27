@@ -1,159 +1,130 @@
-/**
- * =========================================================================
- * FEEDANTS COMPETITION SYSTEM - DATABASE SEED SCRIPT
- * (Requirement #21: clearly separated development / initial test data)
- * =========================================================================
- * This script seeds the initial competition document and user accounts in
- * MongoDB for development and local testing.
- *
- * Production UI consumes all data dynamically via the REST API from MongoDB.
- */
+'use strict';
 
+// Development/test seed only. Production data is created and edited through the API/admin workflow.
 require('dotenv').config();
 const mongoose = require('mongoose');
 const connectDB = require('../config/db');
-const Competition = require('../models/Competition');
-const User = require('../models/User');
-const Registration = require('../models/Registration');
-const Winner = require('../models/Winner');
-const Testimonial = require('../models/Testimonial');
+const { Competition, Registration, Testimonial, User, Referral, Winner } = require('../models');
 
-async function seed() {
-  await connectDB();
+const DAY = 24 * 60 * 60 * 1000;
 
-  console.log('[seed] Cleaning test records...');
-  await Promise.all([
-    Competition.deleteMany({}),
-    Registration.deleteMany({}),
-    Winner.deleteMany({}),
-    Testimonial.deleteMany({}),
-    User.deleteMany({ email: { $in: ['swapnit@feedants.com', 'demo@feedants.com'] } }),
+function datesFor({ registrationClosesAt, submissionEndsAt, resultAt } = {}) {
+  const now = Date.now();
+  return {
+    registrationOpensAt: new Date(now - 5 * DAY),
+    registrationClosesAt: registrationClosesAt || new Date(now + DAY),
+    submissionStartsAt: new Date(now - 2 * DAY),
+    submissionEndsAt: submissionEndsAt || new Date(now + 20 * DAY),
+    resultAt: resultAt || new Date(now + 22 * DAY),
+  };
+}
+
+function competitionData(overrides = {}) {
+  const dates = overrides.dates || datesFor();
+  return {
+    slug: overrides.slug,
+    title: overrides.title || { en: 'Competition', hi: 'प्रतियोगिता' },
+    category: overrides.category || 'Dance',
+    tags: overrides.tags || [],
+    certificate: true,
+    prizePool: overrides.prizePool ?? 150000,
+    entryFee: overrides.entryFee ?? 9900,
+    currency: 'INR',
+    capacity: overrides.capacity ?? 20,
+    bookedCount: overrides.bookedCount ?? 0,
+    dates,
+    about: overrides.about || { en: 'Competition information will be provided by the organizer.', hi: 'प्रतियोगिता की जानकारी आयोजक द्वारा दी जाएगी।' },
+    judgingParameters: overrides.judgingParameters || [
+      { name: { en: 'Technique', hi: 'तकनीक' }, description: { en: 'Technical quality of the performance.', hi: 'प्रदर्शन की तकनीकी गुणवत्ता।' }, percentage: 50 },
+      { name: { en: 'Expression', hi: 'अभिव्यक्ति' }, description: { en: 'Expression and presentation.', hi: 'अभिव्यक्ति और प्रस्तुति।' }, percentage: 50 },
+    ],
+    rules: overrides.rules || [{ en: 'Follow the organizer rules.', hi: 'आयोजक के नियमों का पालन करें।' }],
+    rewards: overrides.rewards || [],
+    previousWinners: overrides.previousWinners || [],
+    disclaimer: overrides.disclaimer || { en: 'Results are decided by the judging panel.', hi: 'परिणाम निर्णायक मंडल द्वारा तय किए जाते हैं।' },
+    status: overrides.status || 'published',
+  };
+}
+
+async function seedDatabase() {
+  await Promise.all([Competition, Registration, Testimonial, User, Referral, Winner].map((model) => model.deleteMany({})));
+
+  const [amit, priya, rahul, sneha] = await User.create([
+    { name: 'Amit Rawal', email: 'amit@feedants.dev', referralCode: 'referral123' },
+    { name: 'Priya Sharma', email: 'priya@feedants.dev', referralCode: 'priya123' },
+    { name: 'Rahul Sharma', email: 'rahul@feedants.dev', referralCode: 'rahul123' },
+    { name: 'Sneha Kapoor', email: 'sneha@feedants.dev', referralCode: 'sneha123' },
+  ]);
+  const fillerUsers = await User.create(Array.from({ length: 16 }, (_, index) => ({
+    name: `Participant ${index + 5}`,
+    email: `participant${index + 5}@feedants.dev`,
+    referralCode: `participant${index + 5}`,
+  })));
+
+  const main = await Competition.create(competitionData({
+    slug: 'feedants-classical-dance',
+    title: { en: 'Feedants Classical Dance', hi: 'फीडेंट्स शास्त्रीय नृत्य' },
+    tags: ['Dance', 'Multi-Win'],
+    prizePool: 150000,
+    entryFee: 9900,
+    capacity: 20,
+    bookedCount: 1,
+    rewards: [55000, 30000, 24000, 20000, 13000, 8000].map((amount, index) => ({ position: index + 1, label: { en: `${index + 1} Winner`, hi: `${index + 1} विजेता` }, amount })),
+  }));
+  await Registration.create({ competitionId: main._id, userId: priya._id, status: 'confirmed', amount: main.entryFee, currency: 'INR', confirmedAt: new Date() });
+  await Winner.create([1, 2, 3, 4].map((position) => ({
+    competitionId: main._id,
+    userId: [priya, rahul, sneha, amit][position - 1]._id,
+    name: ['Participant One', 'Participant Two', 'Participant Three', 'Participant Four'][position - 1],
+    position,
+    positionLabel: `${position} Winner`,
+    prize: String([55000, 30000, 24000, 20000][position - 1]),
+    year: String(2025 - position + 1),
+  })));
+
+  const full = await Competition.create(competitionData({ slug: 'feedants-bharatanatyam-open', capacity: 20, bookedCount: 20 }));
+  await Registration.create([amit, priya, rahul, sneha, ...fillerUsers].map((user) => ({
+    competitionId: full._id,
+    userId: user._id,
+    status: 'confirmed',
+    amount: full.entryFee,
+    currency: 'INR',
+    confirmedAt: new Date(),
+  })));
+  const closed = await Competition.create(competitionData({
+    slug: 'feedants-folk-fest',
+    dates: datesFor({ registrationClosesAt: new Date(Date.now() - DAY), submissionEndsAt: new Date(Date.now() - 1), resultAt: new Date(Date.now() + DAY) }),
+  }));
+  const results = await Competition.create(competitionData({
+    slug: 'feedants-kathak-finals',
+    dates: datesFor({ registrationClosesAt: new Date(Date.now() - 3 * DAY), submissionEndsAt: new Date(Date.now() - 2 * DAY), resultAt: new Date(Date.now() - DAY) }),
+  }));
+  await Competition.create(competitionData({ slug: 'feedants-free-freestyle', entryFee: 0 }));
+
+  await Testimonial.create([
+    { name: 'Participant One', text: { en: 'The submission flow was easy to follow.' }, rating: 5, isPublished: true },
+    { name: 'Participant Two', text: { en: 'The competition information was clear.' }, rating: 4, isPublished: true },
+    { name: 'Participant Three', text: { en: 'I could track my registration status.' }, rating: 5, isPublished: true },
+  ]);
+  await Referral.create([
+    { referrerId: amit._id, refereeId: priya._id, rewardAmount: 1000 },
+    { referrerId: amit._id, refereeId: rahul._id, rewardAmount: 1000 },
+    { referrerId: amit._id, refereeId: sneha._id, rewardAmount: 1000 },
   ]);
 
-  const passwordHash = await User.hashPassword('Feedants@2026');
+  return { main, full, closed, results };
+}
 
-  // Real initial authenticated user
-  const user = await User.create({
-    name: 'Swapnit Patel',
-    email: 'swapnit@feedants.com',
-    passwordHash,
-    profileImage: null, // Initial dynamic avatar generates 'S'
-    photoUrl: null,
-    referralCode: 'swapnit2026',
-  });
-
-  const now = Date.now();
-  const day = 24 * 60 * 60 * 1000;
-
-  // Real Competition Document with full fields as per Requirements #4, #5, #11, #13, #14
-  const competition = await Competition.create({
-    title: 'Feedants Classical Dance',
-    category: 'Classical Dance',
-    tags: ['Dance', 'Multi-Win'],
-    hasCertificateForWinners: true,
-
-    prizePool: 1500,
-    entryFee: 99,
-    currency: 'INR',
-
-    totalSpots: 20,
-    maxParticipants: 20,
-    spotsBooked: 1,
-
-    judge: {
-      name: 'Manju Dubey',
-      title: 'Judge',
-      profession: 'Professional Kathak Dancer',
-      experience: '12+ Years of Experience',
-      experienceLabel: 'Professional Kathak Dancer · 12+ Years of Experience',
-      profileImage: 'http://localhost:5000/uploads/manju_dubey.jpg',
-      photoUrl: 'http://localhost:5000/uploads/manju_dubey.jpg',
-      introductionVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      introVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    },
-
-    registrationOpensAt: new Date(now - 4 * day),
-    registrationClosesAt: new Date(now + 1 * day + 6 * 60 * 60 * 1000 + 28 * 60 * 1000 + 32 * 1000),
-    submissionStartsAt: new Date(now - 2 * day),
-    submissionEndsAt: new Date(now + 24 * day),
-    resultDate: new Date(now + 26 * day),
-
-    aboutText:
-      'This is an online classical dance competition open for all age groups. Participate from anywhere and showcase your talent. Express your passion through traditional dance.',
-    description:
-      'This is an online classical dance competition open for all age groups. Participate from anywhere and showcase your talent. Express your passion through traditional dance.',
-
-    // Requirement #13: Structured Judging Parameters with percentages summing to exactly 100%
-    judgingParametersText:
-      'Entries are judged on technique, rhythm (Taal), emotional expression (Bhava), choreography originality, costume, and overall stage presence by our panel of professional dancers.',
-    judgingParameters: [
-      {
-        name: 'Technique & Footwork',
-        description: 'Precision of Tatkar, poses (Angashuddhi), and body posture clarity',
-        percentage: 30,
-      },
-      {
-        name: 'Rhythm & Taal Sync',
-        description: 'Accurate synchronization with beats, laya control, and musicality',
-        percentage: 25,
-      },
-      {
-        name: 'Emotional Expression (Bhava)',
-        description: 'Facial expressions (Mukhabhinaya), storytelling, and emotional depth',
-        percentage: 25,
-      },
-      {
-        name: 'Choreography & Presentation',
-        description: 'Originality, stage presence, traditional costume, and ghungroo clarity',
-        percentage: 20,
-      },
-    ],
-
-    rules:
-      'Open to all age groups and skill levels. One entry per participant. Video performance must be continuous and unedited between 1 to 10 minutes. Traditional Indian classical styles allowed: Kathak, Bharatanatyam, Odissi, Kathakali, Kuchipudi, Manipuri, Mohiniyattam.',
-    eligibility:
-      'Open to all age groups and skill levels across India. Both solo classical dancers and students can participate.',
-    rulesAndEligibility:
-      'Open to all age groups and skill levels. One entry per participant. Video performance must be continuous and unedited between 1 to 10 minutes. Traditional Indian classical styles allowed: Kathak, Bharatanatyam, Odissi, Kathakali, Kuchipudi, Manipuri, Mohiniyattam.',
-
-    // Requirement #14: Dynamic rewards stored in MongoDB
-    rewards: [
-      { position: 1, label: '1st Winner', amount: 550 },
-      { position: 2, label: '2nd Winner', amount: 300 },
-      { position: 3, label: '3rd Winner', amount: 240 },
-      { position: 4, label: '4th Winner', amount: 200 },
-      { position: 5, label: '5th Winner', amount: 130 },
-      { position: 6, label: '6th Winner', amount: 80 },
-    ],
-
-    // Requirement #12 & #19: No fake hardcoded previous winners disguised as real history
-    previousWinners: [],
-
-    disclaimerText: 'Only contributions from paid participants will be considered for judging.',
-    prizeMoneyInfoVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-
-    referral: { earnAmountPerSignup: 10 },
-    isPublished: true,
-  });
-
-  // Initial verified registration to demonstrate live 1 / 20 booked -> 19 spots left
-  await Registration.create({
-    competition: competition._id,
-    user: user._id,
-    entryFeePaid: competition.entryFee,
-    paymentId: 'pay_init_seed_1',
-    paymentStatus: 'paid',
-    status: 'active',
-  });
-
-  console.log('[seed] Database seeded successfully!');
-  console.log('[seed] User:', user.name, `<${user.email}>`);
-  console.log('[seed] Competition ID:', competition._id.toString());
-
+async function run() {
+  await connectDB();
+  await seedDatabase();
+  console.log('[seed] Development data inserted.');
   await mongoose.connection.close();
 }
 
-seed().catch((err) => {
-  console.error('[seed] Error:', err);
-  process.exit(1);
+module.exports = { seedDatabase };
+
+if (require.main === module) run().catch((error) => {
+  console.error('[seed] failed', error);
+  process.exitCode = 1;
 });

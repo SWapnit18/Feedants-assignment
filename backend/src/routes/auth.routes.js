@@ -15,6 +15,10 @@ if (config.enableDevLogin) {
 
 const meRouter = Router();
 meRouter.get('/', requireAuth, ctrl.me);
+meRouter.put('/', requireAuth, validate({ body: z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  profileImage: z.string().trim().url().nullable().optional(),
+}).refine((body) => Object.keys(body).length > 0, 'At least one profile field is required') }), ctrl.updateMe);
 meRouter.get('/referral', requireAuth, ctrl.referral);
 
 module.exports = { authRouter, meRouter };

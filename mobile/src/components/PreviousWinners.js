@@ -12,13 +12,13 @@ export default function PreviousWinners({ winners = [], lang = 'ENG' }) {
 
   // Extract distinct years if winners exist
   const years = hasWinners
-    ? Array.from(new Set(winners.map((w) => String(w.year || '2025')))).sort().reverse()
+    ? Array.from(new Set(winners.map((w) => String(w.year)).filter(Boolean))).sort().reverse()
     : [];
 
-  const [selectedYear, setSelectedYear] = useState(years[0] || '2025');
+  const [selectedYear, setSelectedYear] = useState(years[0] || null);
 
   const filteredWinners = hasWinners
-    ? winners.filter((w) => String(w.year || '2025') === selectedYear)
+    ? winners.filter((w) => !selectedYear || String(w.year) === selectedYear)
     : [];
 
   const top3 = filteredWinners.filter((w) => Number(w.position) <= 3);

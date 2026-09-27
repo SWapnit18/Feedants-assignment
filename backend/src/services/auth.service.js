@@ -11,7 +11,7 @@ const serializeUser = (u) => ({
   id: String(u._id),
   name: u.name,
   email: u.email,
-  avatarUrl: u.avatarUrl || null,
+  avatarUrl: u.avatarUrl || u.profileImage || u.photoUrl || null,
   referralCode: u.referralCode,
 });
 
@@ -62,4 +62,13 @@ async function getUser(userId) {
   return { user: serializeUser(user) };
 }
 
-module.exports = { devLogin, listUsers, getUser, signToken, verifyToken };
+async function updateUser(userId, changes) {
+  const update = {};
+  if (changes.name !== undefined) update.name = changes.name.trim();
+  if (changes.profileImage !== undefined) update.profileImage = changes.profileImage || null;
+  const user = await User.findByIdAndUpdate(userId, { $set: update }, { new: true, runValidators: true }).lean();
+  if (!user) throw new AppError('UNAUTHENTICATED', 'User no longer exists');
+  return { user: serializeUser(user) };
+}
+
+module.exports = { devLogin, listUsers, getUser, updateUser, signToken, verifyToken };

@@ -7,19 +7,19 @@ import { t } from '../utils/i18n';
 
 export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
   const {
-    title = 'Feedants Classical Dance',
-    tags = ['Dance', 'Multi-Win'],
-    hasCertificateForWinners = true,
-    prizePool = 1500,
-    entryFee = 99,
-    capacity = {},
-    currency = 'INR',
+    title,
+    tags = [],
+    certificate = false,
+    prizePool,
+    entryFee,
+    availability,
+    currency,
     user = {},
   } = competition || {};
 
-  const totalSpots = capacity.totalSpots ?? competition?.totalSpots ?? 20;
-  const spotsBooked = capacity.spotsBooked ?? competition?.spotsBooked ?? 0;
-  const spotsLeft = capacity.spotsLeft ?? Math.max(totalSpots - spotsBooked, 0);
+  const totalSpots = availability?.capacity || 0;
+  const spotsBooked = availability?.booked || 0;
+  const spotsLeft = availability?.remaining || 0;
   const percentBooked = totalSpots > 0 ? Math.min((spotsBooked / totalSpots) * 100, 100) : 0;
   const currencySymbol = currency === 'INR' ? '₹ ' : '';
 
@@ -53,7 +53,7 @@ export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
           </View>
         ))}
 
-        {hasCertificateForWinners && (
+        {certificate && (
           <View style={styles.certificateRow}>
             <View style={{ marginRight: 5, marginTop: 1 }}>
               <CertificateTrophyIcon size={14} color="#0F766E" />
@@ -69,7 +69,7 @@ export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
         <View style={styles.statCol}>
           <Text style={styles.statLabel}>{t(lang, 'prizePool')}</Text>
           <Text style={styles.prizePoolValue}>
-            {currencySymbol}{prizePool?.toLocaleString('en-IN')}
+            {prizePool == null ? '—' : `${currencySymbol}${prizePool.toLocaleString('en-IN')}`}
           </Text>
         </View>
 
@@ -77,7 +77,7 @@ export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
         <View style={styles.statCol}>
           <Text style={styles.statLabel}>{t(lang, 'entryFee')}</Text>
           <Text style={styles.entryFeeValue}>
-            {currencySymbol}{entryFee}
+            {entryFee == null ? '—' : `${currencySymbol}${entryFee}`}
           </Text>
         </View>
 

@@ -40,8 +40,8 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
   const { data: competition, isLoading, isError, refetch } = useCompetitionDetails(competitionId);
 
   const { data: reviews = [] } = useQuery({
-    queryKey: ['reviews', competitionId || 'feedants-classical-dance'],
-    queryFn: () => fetchReviews(competitionId || 'feedants-classical-dance'),
+    queryKey: ['reviews', competitionId || competition?.slug],
+    queryFn: () => fetchReviews(competitionId || competition?.slug),
     staleTime: 30000,
   });
 
@@ -90,7 +90,7 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
       setBusyAction('REGISTER');
       await registerMutation.mutateAsync({ paymentMethod });
       setRegistrationModalVisible(false);
-      showToast("🎉 Registration Successful! You're enrolled in Feedants Classical Dance!");
+      showToast("Registration successful. Your status is updating.");
       refetch();
     } catch (err) {
       // Real API Error Handling (Requirement #7, #8, #18)
