@@ -11,7 +11,7 @@ const queryClient = new QueryClient({
 
 // Reference app entry: in a real app this competitionId comes from
 // navigation params (e.g. tapping a competition card on the list screen).
-const DEMO_COMPETITION_ID = '6ab909f57e7e9ffd3bf4722a';
+const DEMO_COMPETITION_ID = '6ab90c66d8bb4a814e559a4b';
 
 export default function App() {
   return (

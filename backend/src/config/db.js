@@ -1,4 +1,12 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
+
+// Fix for Windows DNS resolution for MongoDB Atlas SRV (_mongodb._tcp) records
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {
+  // Ignore fallback if custom server not available
+}
 
 /**
  * Establish the MongoDB connection.
