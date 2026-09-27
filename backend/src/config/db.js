@@ -1,18 +1,17 @@
 const mongoose = require('mongoose');
 const dns = require('dns');
 
-// Fix for Windows DNS resolution for MongoDB Atlas SRV (_mongodb._tcp) records
+// Fix for Windows / serverless DNS resolution for MongoDB Atlas SRV (_mongodb._tcp) records
 try {
   dns.setServers(['8.8.8.8', '1.1.1.1']);
 } catch (e) {
   // Ignore fallback if custom server not available
 }
 
+let cachedPromise = null;
+
 /**
- * Establish the MongoDB connection.
- * We keep pool size sane for a multi-instance deployment behind a load
- * balancer -- each Node process gets its own pool, so don't set this too
- * high or you'll exhaust MongoDB's connection limit under horizontal scale.
+ * Establish or reuse cached MongoDB connection (optimized for both long-running and serverless Vercel runtimes).
  */
 async function connectDB() {
   const uri = process.env.MONGO_URI;
@@ -20,22 +19,27 @@ async function connectDB() {
     throw new Error('MONGO_URI is not defined in the environment');
   }
 
-  mongoose.set('strictQuery', true);
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
 
-  await mongoose.connect(uri, {
-    maxPoolSize: 20,
-    serverSelectionTimeoutMS: 10000,
-  });
+  if (!cachedPromise) {
+    mongoose.set('strictQuery', true);
+    cachedPromise = mongoose.connect(uri, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+    }).then((conn) => {
+      console.log(`[db] connected -> ${conn.connection.name}`);
+      return conn;
+    }).catch((err) => {
+      cachedPromise = null;
+      console.error('[db] connection error', err);
+      throw err;
+    });
+  }
 
-  console.log(`[db] connected -> ${mongoose.connection.name}`);
-
-  mongoose.connection.on('error', (err) => {
-    console.error('[db] connection error', err);
-  });
-
-  mongoose.connection.on('disconnected', () => {
-    console.warn('[db] disconnected');
-  });
+  await cachedPromise;
+  return mongoose.connection;
 }
 
 module.exports = connectDB;

@@ -1,10 +1,11 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Point this at your machine's LAN IP when testing on a physical device --
-// 'localhost' only works from an iOS simulator or an Android emulator with
-// port forwarding set up.
-export const API_BASE_URL = 'http://localhost:5000/api';
+// Deployed Vercel Backend URL with fallback to local development server
+const VERCEL_URL = 'https://backend-9oaqzhrxg-swapnit18s-projects.vercel.app/api';
+const LOCAL_URL = 'http://localhost:5000/api';
+
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || VERCEL_URL || LOCAL_URL;
 
 const client = axios.create({
   baseURL: API_BASE_URL,

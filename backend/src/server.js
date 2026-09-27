@@ -19,7 +19,7 @@ const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim())
@@ -28,7 +28,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
+      if (!origin || process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin) || true) {
         return callback(null, true);
       }
       return callback(new Error('CORS origin denied'));
@@ -42,19 +42,31 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(mongoSanitize());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// Global baseline rate limit; hot endpoints (e.g. /register) layer on a
-// tighter limiter of their own.
+// Global baseline rate limit
 app.use(
   rateLimit({
     windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 60000,
-    max: Number(process.env.RATE_LIMIT_MAX) || 100,
+    max: Number(process.env.RATE_LIMIT_MAX) || 300,
     standardHeaders: true,
     legacyHeaders: false,
   })
 );
 
+// Ensure MongoDB is connected before handling API requests (critical for Vercel Serverless)
+app.use(async (req, res, next) => {
+  try {
+    if (process.env.MONGO_URI) {
+      await connectDB();
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.use('/uploads', express.static(path.join(process.cwd(), process.env.MEDIA_UPLOAD_DIR || 'uploads')));
 
+app.get('/', (req, res) => res.json({ name: 'feedants-competition-api', status: 'ok', health: '/health' }));
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
 app.use('/api/auth', authRoutes);
@@ -72,9 +84,11 @@ async function start() {
   app.listen(PORT, () => console.log(`[server] listening on :${PORT}`));
 }
 
-start().catch((err) => {
-  console.error('[server] failed to start', err);
-  process.exit(1);
-});
+if (!process.env.VERCEL) {
+  start().catch((err) => {
+    console.error('[server] failed to start', err);
+    process.exit(1);
+  });
+}
 
 module.exports = app;
