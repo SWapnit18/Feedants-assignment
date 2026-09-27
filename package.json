@@ -12,7 +12,16 @@
     "test:mobile": "npm --prefix mobile test",
     "test": "npm --prefix backend test && npm --prefix mobile test"
   },
-  "keywords": ["feedants", "react-native", "expo", "express", "mongodb"],
+  "keywords": [
+    "feedants",
+    "react-native",
+    "expo",
+    "express",
+    "mongodb"
+  ],
   "author": "Feedants Candidate",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.2"
+  }
 }
