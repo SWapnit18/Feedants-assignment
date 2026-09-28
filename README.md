@@ -148,3 +148,5 @@ Press `w` for web, `a` for Android emulator, `i` for iOS simulator, or scan the 
 2. **Razorpay Signature Webhooks**: Integrate full server-side signature verification where `Registration` activation occurs strictly upon webhook confirmation.
 3. **Distributed Sharding**: Shard the MongoDB collection by `competitionId` to isolate write contention for viral competitions.
 4. **Media Transcoding**: Integrate AWS MediaConvert or Cloudinary to generate adaptive bitrate streams (HLS/DASH) for judging video playback across mobile connections.
+   
+ 
