@@ -8,6 +8,30 @@ const { validate } = require('../middleware/validate');
 const config = require('../config');
 
 const authRouter = Router();
+
+authRouter.post(
+  ['/sign-in', '/signin', '/login'],
+  validate({
+    body: z.object({
+      email: z.string().trim().toLowerCase().email().max(254),
+      password: z.string().min(1, 'Password is required'),
+    }),
+  }),
+  ctrl.signIn,
+);
+
+authRouter.post(
+  ['/sign-up', '/signup'],
+  validate({
+    body: z.object({
+      name: z.string().trim().min(1, 'Name is required').max(120),
+      email: z.string().trim().toLowerCase().email().max(254),
+      password: z.string().min(8, 'Password must be at least 8 characters'),
+    }),
+  }),
+  ctrl.signUp,
+);
+
 if (config.enableDevLogin) {
   authRouter.post('/dev-login', validate({ body: z.object({ email: z.string().trim().toLowerCase().email().max(254) }) }), ctrl.devLogin);
   authRouter.get('/users', ctrl.listUsers);

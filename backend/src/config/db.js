@@ -15,13 +15,22 @@ let cachedPromise = null;
  * Establish or reuse cached MongoDB connection (optimized for both long-running and serverless Vercel runtimes).
  */
 async function connectDB() {
-  const uri = config.mongoUri || process.env.MONGO_URI;
-  if (!uri) {
-    throw new Error('MONGODB_URI or MONGO_URI is not defined in the environment');
-  }
-
   if (mongoose.connection.readyState === 1) {
     return mongoose.connection;
+  }
+
+  let uri = config.mongoUri || process.env.MONGO_URI;
+
+  // Fallback to in-memory MongoDB when no URI is set or USE_MEMORY_DB is enabled
+  if (!uri || process.env.USE_MEMORY_DB === 'true') {
+    try {
+      const { MongoMemoryReplSet } = require('mongodb-memory-server');
+      const replSet = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
+      uri = replSet.getUri();
+      console.log('[db] using in-memory MongoDB (mongodb-memory-server)');
+    } catch (e) {
+      throw new Error('MONGODB_URI or MONGO_URI is not defined and mongodb-memory-server is not available');
+    }
   }
 
   if (!cachedPromise) {

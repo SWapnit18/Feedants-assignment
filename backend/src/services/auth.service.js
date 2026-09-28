@@ -36,6 +36,51 @@ const nameFromEmail = (email) =>
     .map((p) => p[0].toUpperCase() + p.slice(1))
     .join(' ') || 'Feedants User';
 
+/** Sign in with email and password */
+async function signIn(email, password) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail }).select('+passwordHash').lean();
+  if (!user) {
+    throw new AppError('UNAUTHENTICATED', 'Invalid email or password. Please check your credentials.');
+  }
+
+  if (user.passwordHash) {
+    const isMatch = await User.comparePassword?.(password, user.passwordHash) || (await require('bcryptjs').compare(password, user.passwordHash));
+    if (!isMatch) {
+      throw new AppError('UNAUTHENTICATED', 'Invalid email or password. Please check your credentials.');
+    }
+  }
+
+  const { email: _e, ...publicUser } = serializeUser(user);
+  return { token: signToken(user), user: publicUser, data: { token: signToken(user), user: publicUser } };
+}
+
+/** Sign up with name, email, and minimum 8-char password */
+async function signUp(name, email, password) {
+  const trimmedName = String(name || '').trim();
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+
+  if (!trimmedName) throw new AppError('VALIDATION_ERROR', 'Full name is required');
+  if (!normalizedEmail || !normalizedEmail.includes('@')) throw new AppError('VALIDATION_ERROR', 'Valid email is required');
+  if (!password || password.length < 8) throw new AppError('VALIDATION_ERROR', 'Password must be at least 8 characters long');
+
+  const existing = await User.findOne({ email: normalizedEmail }).lean();
+  if (existing) {
+    throw new AppError('CONFLICT', 'An account with this email address already exists. Please sign in.');
+  }
+
+  const passwordHash = await require('bcryptjs').hash(password, 10);
+  const newUser = await User.create({
+    name: trimmedName,
+    email: normalizedEmail,
+    passwordHash,
+    referralCode: randomId(8).toLowerCase(),
+  });
+
+  const { email: _e, ...publicUser } = serializeUser(newUser.toObject());
+  return { token: signToken(newUser), user: publicUser, data: { token: signToken(newUser), user: publicUser } };
+}
+
 /** Demo login: find (or create) a user by email and issue a JWT. */
 async function devLogin(email) {
   let user = await User.findOne({ email }).lean();
@@ -71,4 +116,4 @@ async function updateUser(userId, changes) {
   return { user: serializeUser(user) };
 }
 
-module.exports = { devLogin, listUsers, getUser, updateUser, signToken, verifyToken };
+module.exports = { devLogin, signIn, signUp, listUsers, getUser, updateUser, signToken, verifyToken };

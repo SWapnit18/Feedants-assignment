@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Modal } from 'react-native';
-import { Video } from 'expo-av';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform } from 'react-native';
 import { colors, radius, spacing } from '../theme';
-
 import { t } from '../utils/i18n';
 import ProfileAvatar from './ProfileAvatar';
+import EnhancedVideoPlayer from './EnhancedVideoPlayer';
 
 export default function JudgeCard({ judge, lang = 'ENG' }) {
   const [playing, setPlaying] = useState(false);
+
   if (!judge) return null;
 
   const roleLabel = t(lang, 'judgeLabel');
@@ -15,15 +15,11 @@ export default function JudgeCard({ judge, lang = 'ENG' }) {
   const exp1 = lang === 'हिंदी' ? t(lang, 'judgeRole') : (judge.experienceLabel?.split('·')[0] || judge.profession || '');
   const exp2 = lang === 'हिंदी' ? t(lang, 'judgeExp') : (judge.experienceLabel?.split('·')[1]?.trim() || judge.experience || '');
 
-  const photoSource = judge.photoUrl ? { uri: judge.photoUrl } : null;
+  const videoUri = judge.introVideoUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
 
   return (
     <View style={styles.card}>
-      {photoSource ? (
-        <Image source={photoSource} style={styles.avatar} />
-      ) : (
-        <ProfileAvatar name={judge.name} size={60} fontSize={24} style={styles.avatar} />
-      )}
+      <ProfileAvatar name={judge.name} size={60} fontSize={24} style={styles.avatar} />
       <View style={styles.info}>
         <Text style={styles.roleLabel}>{roleLabel}</Text>
         <Text style={styles.name}>{name}</Text>
@@ -34,7 +30,6 @@ export default function JudgeCard({ judge, lang = 'ENG' }) {
       <TouchableOpacity
         style={styles.playButton}
         onPress={() => setPlaying(true)}
-        disabled={!judge.introVideoUrl}
         activeOpacity={0.8}
       >
         <View style={styles.playCircle}>
@@ -43,20 +38,31 @@ export default function JudgeCard({ judge, lang = 'ENG' }) {
         <Text style={styles.playLabel}>{t(lang, 'introVideo')}</Text>
       </TouchableOpacity>
 
-      <Modal visible={playing} animationType="slide" transparent={false} onRequestClose={() => setPlaying(false)}>
+      {/* VLC Powered Video Modal */}
+      <Modal visible={playing} animationType="fade" transparent={false} onRequestClose={() => setPlaying(false)}>
         <View style={styles.modalContainer}>
-          <TouchableOpacity style={styles.closeButton} onPress={() => setPlaying(false)}>
-            <Text style={styles.closeText}>✕ Close</Text>
-          </TouchableOpacity>
-          <View style={styles.videoWrapper}>
-            <Video
-              source={{
-                uri: judge.introVideoUrl,
-              }}
-              style={styles.video}
-              useNativeControls
-              resizeMode="contain"
-              shouldPlay
+          <View style={styles.modalContentBox}>
+            <View style={styles.modalTopHeader}>
+              <View style={{ flex: 1, marginRight: 10 }}>
+                <Text style={styles.modalHeaderTitle} numberOfLines={1}>
+                  {judge.name} – {t(lang, 'introVideo')}
+                </Text>
+                <Text style={styles.modalHeaderSubtitle}>
+                  {judge.profession || judge.experienceLabel || 'Judge Introduction'}
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setPlaying(false)} activeOpacity={0.8}>
+                <Text style={styles.modalCloseBtnText}>✕ Close</Text>
+              </TouchableOpacity>
+            </View>
+
+            <EnhancedVideoPlayer
+              videoUri={videoUri}
+              title={`${judge.name} – Intro Video`}
+              initialOrientation="landscape"
+              allowFullscreen={true}
+              allowMinimize={false}
+              allowOrientationToggle={true}
             />
           </View>
         </View>
@@ -87,7 +93,6 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     marginRight: spacing(3),
-    backgroundColor: colors.borderLight,
   },
   info: {
     flex: 1,
@@ -141,31 +146,65 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#0A0E1A',
+    backgroundColor: '#0F172A',
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing(4),
+    ...(Platform.OS === 'web'
+      ? {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 999999,
+        }
+      : {}),
   },
-  closeButton: {
-    position: 'absolute',
-    top: 52,
-    right: 20,
-    zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  closeText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  videoWrapper: {
+  modalContentBox: {
     width: '100%',
-    height: 320,
-    backgroundColor: '#000',
+    maxWidth: 600,
+    backgroundColor: '#0A0F1D',
+    borderRadius: radius.lg,
+    padding: spacing(4),
+    borderWidth: 1.5,
+    borderColor: '#FF5500',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 8,
   },
-  video: {
-    width: '100%',
-    height: '100%',
+  modalTopHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing(3),
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E293B',
+    paddingBottom: spacing(2.5),
+  },
+  modalHeaderTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  modalHeaderSubtitle: {
+    color: '#FED7AA',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  modalCloseBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

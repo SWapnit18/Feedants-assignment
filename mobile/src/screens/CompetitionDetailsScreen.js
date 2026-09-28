@@ -7,6 +7,8 @@ import {
   StatusBar,
   StyleSheet,
   ActivityIndicator,
+  Modal,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -34,6 +36,7 @@ import SubmissionModal from '../components/SubmissionModal';
 import PolicyModal from '../components/PolicyModal';
 import RegistrationModal from '../components/RegistrationModal';
 import NavigationSheet from '../components/NavigationSheet';
+import EnhancedVideoPlayer from '../components/EnhancedVideoPlayer';
 
 export default function CompetitionDetailsScreen({ route, navigation }) {
   const competitionId = route?.params?.competitionId;
@@ -58,6 +61,7 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
   const [policyModalVisible, setPolicyModalVisible] = useState(false);
   const [activePolicyType, setActivePolicyType] = useState('refund');
   const [toastMessage, setToastMessage] = useState(null);
+  const [submittedVideoPlayback, setSubmittedVideoPlayback] = useState(null);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -257,6 +261,57 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         {/* 2. Judge Card with photo, credentials & Intro Video button */}
         <JudgeCard judge={competition.judge} lang={selectedLanguage} />
 
+        {/* 🎬 Active Submission Banner if User has Submitted */}
+        {(competition.viewer?.hasSubmission || competition.action?.action === 'RESUBMIT' || competition.action?.label?.toLowerCase().includes('resubmit') || competition.action?.label?.toLowerCase().includes('submitted')) && (
+          <View style={styles.mySubmissionBanner}>
+            <View style={styles.mySubHeaderRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.mySubHeading}>
+                  {selectedLanguage === 'हिंदी' ? '🎬 आपकी प्रस्तुत वीडियो' : '🎬 Your Submitted Video'}
+                </Text>
+                <Text style={styles.mySubSubtitle}>
+                  {selectedLanguage === 'हिंदी'
+                    ? 'स्थिति: ✓ सबमिट किया गया • मूल्यांकन जारी'
+                    : 'Status: ✓ Submitted • Under Jury Evaluation'}
+                </Text>
+              </View>
+              <View style={styles.mySubBadge}>
+                <Text style={styles.mySubBadgeText}>
+                  {selectedLanguage === 'हिंदी' ? '✓ सक्रिय प्रविष्टि' : '✓ Active Entry'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.mySubActionsRow}>
+              <TouchableOpacity
+                style={styles.mySubPlayBtn}
+                onPress={() =>
+                  setSubmittedVideoPlayback({
+                    title: `${typeof competition.title === 'string' ? competition.title : competition.title?.en || 'Performance Entry'} – My Submission`,
+                    uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                  })
+                }
+                activeOpacity={0.85}
+              >
+                <Text style={styles.mySubPlayIcon}>▶</Text>
+                <Text style={styles.mySubPlayText}>
+                  {selectedLanguage === 'हिंदी' ? 'वीडियो देखें' : 'Watch Video'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.mySubChangeBtn}
+                onPress={() => setSubmissionModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.mySubChangeText}>
+                  {selectedLanguage === 'हिंदी' ? 'पुनः सबमिट करें' : 'Resubmit Video'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* 3. Live Countdown Banner */}
         <CountdownBanner
           state={competition.state}
@@ -335,6 +390,7 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         isRegistering={busyAction === 'REGISTER'}
         onConfirm={handleConfirmRegistration}
         onClose={() => setRegistrationModalVisible(false)}
+        lang={selectedLanguage}
       />
 
       <SubmissionModal
@@ -344,12 +400,15 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         isSubmitting={busyAction === 'SUBMITTING'}
         onSubmit={handleModalSubmit}
         onClose={() => setSubmissionModalVisible(false)}
+        lang={selectedLanguage}
+        onLanguageChange={setSelectedLanguage}
       />
 
       <PolicyModal
         visible={policyModalVisible}
         policyType={activePolicyType}
         onClose={() => setPolicyModalVisible(false)}
+        lang={selectedLanguage}
       />
 
       <NavigationSheet
@@ -362,6 +421,49 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         }}
         onClose={() => setNavigationSheetVisible(false)}
       />
+
+      {/* VLC Video Playback Modal for Submitted Video */}
+      <Modal
+        visible={!!submittedVideoPlayback}
+        animationType="fade"
+        transparent={false}
+        onRequestClose={() => setSubmittedVideoPlayback(null)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContentBox}>
+            <View style={styles.modalTopHeader}>
+              <View style={{ flex: 1, marginRight: 10 }}>
+                <Text style={styles.modalHeaderTitle} numberOfLines={1}>
+                  🎬 {submittedVideoPlayback?.title}
+                </Text>
+                <Text style={styles.modalHeaderSubtitle}>
+                  {selectedLanguage === 'हिंदी'
+                    ? 'प्रदर्शन वीडियो पूर्वावलोकन • जूरी मूल्यांकन हेतु'
+                    : 'Performance Video Preview • Under Jury Evaluation'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setSubmittedVideoPlayback(null)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCloseBtnText}>✕ Close</Text>
+              </TouchableOpacity>
+            </View>
+
+            {submittedVideoPlayback?.uri && (
+              <EnhancedVideoPlayer
+                videoUri={submittedVideoPlayback.uri}
+                title={submittedVideoPlayback.title}
+                initialOrientation="landscape"
+                allowFullscreen={true}
+                allowMinimize={false}
+                allowOrientationToggle={true}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Bottom Sticky Tab Navigation Bar */}
       <BottomNavBar
@@ -501,5 +603,159 @@ const styles = StyleSheet.create({
   scrollContent: {
     backgroundColor: '#F8FAFC',
     paddingBottom: spacing(2),
+  },
+  mySubmissionBanner: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: radius.xl || 16,
+    padding: spacing(4),
+    marginHorizontal: spacing(4),
+    marginTop: spacing(3),
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  mySubHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing(3),
+  },
+  mySubHeading: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  mySubSubtitle: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  mySubBadge: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: '#6EE7B7',
+  },
+  mySubBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#047857',
+  },
+  mySubActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  mySubPlayBtn: {
+    flex: 1.2,
+    backgroundColor: colors.primary || '#004D40',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing(2.5),
+    borderRadius: radius.md,
+    gap: 6,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  mySubPlayIcon: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  mySubPlayText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  mySubChangeBtn: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    paddingVertical: spacing(2.5),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  mySubChangeText: {
+    color: colors.textSecondary,
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing(4),
+    ...(Platform.OS === 'web'
+      ? {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 999999,
+        }
+      : {}),
+  },
+  modalContentBox: {
+    width: '100%',
+    maxWidth: 600,
+    backgroundColor: '#FFFFFF',
+    borderRadius: radius.xl || 16,
+    padding: spacing(4),
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  modalTopHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing(3),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: spacing(2.5),
+  },
+  modalHeaderTitle: {
+    color: colors.text || '#0F172A',
+    fontSize: 14.5,
+    fontWeight: '800',
+  },
+  modalHeaderSubtitle: {
+    color: colors.textMuted || '#64748B',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.pill || 999,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  modalCloseBtnText: {
+    color: colors.text || '#0F172A',
+    fontSize: 11.5,
+    fontWeight: '700',
   },
 });

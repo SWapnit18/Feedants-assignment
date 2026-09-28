@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,19 +14,38 @@ import { colors, radius, spacing } from '../theme';
 import BottomNavBar from '../components/BottomNavBar';
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { useCompetitionDetails } from '../hooks/useCompetitionDetails';
+import { useCompetitions } from '../hooks/useCompetitionDetails';
 
 export default function ExploreScreen({ navigation }) {
   const { user } = useCurrentUser();
-  const { data: comp, isLoading } = useCompetitionDetails();
+  const { data: competitions = [], isLoading, refetch } = useCompetitions();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
   const categories = ['All', 'Classical Dance', 'Bollywood', 'Contemporary', 'Folk', 'Vocals'];
 
-  const spotsLeft = comp?.availability?.remaining ?? null;
-  const totalSpots = comp?.availability?.capacity ?? null;
+  const filteredCompetitions = useMemo(() => {
+    return competitions.filter((comp) => {
+      // Category match
+      const categoryMatch =
+        activeCategory === 'All' ||
+        (comp.category && comp.category.toLowerCase().includes(activeCategory.toLowerCase())) ||
+        (comp.tags && comp.tags.some((t) => t.toLowerCase().includes(activeCategory.toLowerCase())));
+
+      // Search query match
+      const q = searchQuery.trim().toLowerCase();
+      const searchMatch =
+        !q ||
+        (comp.title && comp.title.toLowerCase().includes(q)) ||
+        (comp.category && comp.category.toLowerCase().includes(q)) ||
+        (comp.judge?.name && comp.judge.name.toLowerCase().includes(q)) ||
+        (comp.tags && comp.tags.some((t) => t.toLowerCase().includes(q))) ||
+        (comp.prizePool && String(comp.prizePool).includes(q));
+
+      return categoryMatch && searchMatch;
+    });
+  }, [competitions, activeCategory, searchQuery]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -91,37 +110,66 @@ export default function ExploreScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {isLoading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: spacing(6) }} />
-        ) : comp ? (
-          <TouchableOpacity
-            style={styles.resultCard}
-            onPress={() => navigation?.navigate('CompetitionDetails')}
-            activeOpacity={0.85}
-          >
-            <View style={styles.cardTop}>
-              <View style={{ flex: 1, paddingRight: spacing(2) }}>
-                <Text style={styles.cardTitle}>{comp.title}</Text>
-                <Text style={styles.judgeSubtitle}>
-                  Judge: {comp.judge?.name || 'Not assigned'} {comp.judge?.profession ? `(${comp.judge.profession})` : ''}
-                </Text>
-              </View>
-              <View style={styles.feeBadge}>
-                <Text style={styles.feeText}>₹{comp.entryFee ?? '—'} Fee</Text>
-              </View>
-            </View>
-            <View style={styles.metricsRow}>
-              <Text style={styles.metricText}>
-                🏆 Prize: <Text style={styles.bold}>₹{comp.prizePool?.toLocaleString('en-IN')}</Text>
-              </Text>
-              {spotsLeft !== null && (
-                <Text style={styles.metricText}>
-                  👥 Spots Left: <Text style={styles.bold}>{spotsLeft}/{totalSpots}</Text>
-                </Text>
-              )}
-            </View>
-          </TouchableOpacity>
+        ) : filteredCompetitions.length > 0 ? (
+          filteredCompetitions.map((comp) => {
+            const spotsLeft = comp.availability?.remaining ?? null;
+            const totalSpots = comp.availability?.capacity ?? null;
+            const isRegistered = comp.isRegistered;
+
+            return (
+              <TouchableOpacity
+                key={comp.id || comp.slug}
+                style={[styles.resultCard, isRegistered && styles.registeredCard]}
+                onPress={() => navigation?.navigate('CompetitionDetails', { competitionId: comp.slug || comp.id })}
+                activeOpacity={0.85}
+              >
+                <View style={styles.cardTop}>
+                  <View style={{ flex: 1, paddingRight: spacing(2) }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                      <Text style={styles.cardTitle}>{comp.title}</Text>
+                      {isRegistered && (
+                        <View style={styles.registeredBadge}>
+                          <Text style={styles.registeredBadgeText}>✓ Registered</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.judgeSubtitle}>
+                      {comp.judge?.name ? `Judge: ${comp.judge.name}` : `Category: ${comp.category || 'Dance'}`}
+                    </Text>
+                  </View>
+                  <View style={styles.feeBadge}>
+                    <Text style={styles.feeText}>
+                      {comp.entryFee > 0 ? `₹${comp.entryFee} Fee` : 'Free Entry'}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.metricsRow}>
+                  <Text style={styles.metricText}>
+                    🏆 Prize: <Text style={styles.bold}>₹{comp.prizePool?.toLocaleString('en-IN')}</Text>
+                  </Text>
+                  {spotsLeft !== null && (
+                    <Text style={styles.metricText}>
+                      👥 Spots Left: <Text style={styles.bold}>{spotsLeft}/{totalSpots}</Text>
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No competitions found.</Text>
+            <Text style={styles.emptyIcon}>🔍</Text>
+            <Text style={styles.emptyTitle}>No competitions found</Text>
+            <Text style={styles.emptyText}>Try adjusting your search query or category filter.</Text>
+            <TouchableOpacity
+              style={styles.resetFilterBtn}
+              onPress={() => {
+                setActiveCategory('All');
+                setSearchQuery('');
+              }}
+            >
+              <Text style={styles.resetFilterText}>Clear Filters</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -226,12 +274,16 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing(4),
     borderWidth: 1.5,
-    borderColor: '#0D9488',
+    borderColor: '#E2E8F0',
     marginBottom: spacing(3),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 6,
+  },
+  registeredCard: {
+    borderColor: '#0D9488',
+    backgroundColor: '#FAFCFB',
   },
   cardTop: {
     flexDirection: 'row',
@@ -240,9 +292,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing(2.5),
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 15.5,
     fontWeight: '800',
     color: colors.text,
+  },
+  registeredBadge: {
+    backgroundColor: '#E6FFFA',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+  },
+  registeredBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0D9488',
   },
   judgeSubtitle: {
     fontSize: 12,
@@ -278,9 +341,33 @@ const styles = StyleSheet.create({
   emptyContainer: {
     paddingVertical: spacing(8),
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyIcon: {
+    fontSize: 32,
+    marginBottom: spacing(2),
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 4,
   },
   emptyText: {
     color: colors.textMuted,
-    fontSize: 14,
+    fontSize: 13,
+    marginBottom: spacing(3),
+    textAlign: 'center',
+  },
+  resetFilterBtn: {
+    backgroundColor: '#0F766E',
+    paddingHorizontal: spacing(4),
+    paddingVertical: spacing(2),
+    borderRadius: radius.md,
+  },
+  resetFilterText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 12.5,
   },
 });

@@ -16,10 +16,37 @@ export default function RegistrationModal({
   onClose,
   onConfirm,
   isRegistering,
+  lang = 'ENG',
 }) {
   const [selectedMethod, setSelectedMethod] = useState('upi');
 
   if (!competition) return null;
+
+  const isHindi = lang === 'हिंदी';
+  const title = isHindi ? 'पंजीकरण की पुष्टि करें' : 'Confirm Registration';
+  const feeLabel = isHindi ? 'प्रवेश शुल्क' : 'Entry Fee';
+  const platformLabel = isHindi ? 'प्लेटफ़ॉर्म और प्रोसेसिंग' : 'Platform & Processing';
+  const freeLabel = isHindi ? 'मुफ़्त' : 'FREE';
+  const totalLabel = isHindi ? 'कुल देय राशि' : 'Total Payable';
+  const methodTitle = isHindi ? 'भुगतान विधि चुनें' : 'Select Payment Method';
+  const upiLabel = isHindi ? 'UPI / गूगल पे' : 'UPI / GPay';
+  const cardLabel = isHindi ? 'कार्ड / नेटबैंकिंग' : 'Card / NetBanking';
+  const trustText = isHindi
+    ? '🔒 रेज़रपे द्वारा 100% सुरक्षित भुगतान'
+    : '🔒 100% Secure Checkout via Razorpay';
+  const payBtnText = isHindi
+    ? `₹${competition.entryFee ?? '—'} भुगतान करें और पंजीकरण करें`
+    : `Pay ₹${competition.entryFee ?? '—'} & Register`;
+  const spotsLeftText = isHindi
+    ? `👥 केवल ${competition.capacity?.spotsLeft ?? (competition.totalSpots ? Math.max(competition.totalSpots - (competition.spotsBooked || 0), 0) : 0)} स्थान शेष`
+    : `👥 ${competition.capacity?.spotsLeft ?? (competition.totalSpots ? Math.max(competition.totalSpots - (competition.spotsBooked || 0), 0) : 0)} spots left`;
+
+  const compTitle =
+    typeof competition.title === 'string'
+      ? competition.title
+      : isHindi
+      ? competition.title?.hi || competition.title?.en
+      : competition.title?.en || competition.title?.hi;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -28,44 +55,44 @@ export default function RegistrationModal({
           <View style={styles.dragHandle} />
 
           <View style={styles.header}>
-            <Text style={styles.title}>Confirm Registration</Text>
+            <Text style={styles.title}>{title}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.eventCard}>
-            <Text style={styles.eventName}>{competition.title}</Text>
+            <Text style={styles.eventName}>{compTitle}</Text>
             <View style={styles.badgeRow}>
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>🏆 ₹{competition.prizePool?.toLocaleString?.() || '—'} Prize Pool</Text>
+                <Text style={styles.badgeText}>
+                  🏆 ₹{competition.prizePool?.toLocaleString?.() || '—'} {isHindi ? 'पुरस्कार राशि' : 'Prize Pool'}
+                </Text>
               </View>
               <View style={[styles.badge, styles.badgeTeal]}>
-                <Text style={[styles.badgeText, styles.badgeTealText]}>
-                  👥 {competition.capacity?.spotsLeft ?? (competition.totalSpots ? Math.max(competition.totalSpots - (competition.spotsBooked || 0), 0) : 0)} spots left
-                </Text>
+                <Text style={[styles.badgeText, styles.badgeTealText]}>{spotsLeftText}</Text>
               </View>
             </View>
           </View>
 
           <View style={styles.feeBreakdown}>
             <View style={styles.feeRow}>
-              <Text style={styles.feeLabel}>Entry Fee</Text>
+              <Text style={styles.feeLabel}>{feeLabel}</Text>
               <Text style={styles.feeVal}>₹{competition.entryFee ?? '—'}</Text>
             </View>
             <View style={styles.feeRow}>
-              <Text style={styles.feeLabel}>Platform & Processing</Text>
-              <Text style={styles.feeFree}>FREE</Text>
+              <Text style={styles.feeLabel}>{platformLabel}</Text>
+              <Text style={styles.feeFree}>{freeLabel}</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.feeRow}>
-              <Text style={styles.totalLabel}>Total Payable</Text>
+              <Text style={styles.totalLabel}>{totalLabel}</Text>
               <Text style={styles.totalVal}>₹{competition.entryFee ?? '—'}</Text>
             </View>
           </View>
 
           {/* Payment Method Selector */}
-          <Text style={styles.methodHeader}>Select Payment Method</Text>
+          <Text style={styles.methodHeader}>{methodTitle}</Text>
           <View style={styles.methodsGrid}>
             <TouchableOpacity
               style={[styles.methodCard, selectedMethod === 'upi' && styles.methodCardActive]}
@@ -73,7 +100,7 @@ export default function RegistrationModal({
             >
               <Text style={styles.methodIcon}>⚡</Text>
               <Text style={[styles.methodText, selectedMethod === 'upi' && styles.methodTextActive]}>
-                UPI / GPay
+                {upiLabel}
               </Text>
             </TouchableOpacity>
 
@@ -83,13 +110,13 @@ export default function RegistrationModal({
             >
               <Text style={styles.methodIcon}>💳</Text>
               <Text style={[styles.methodText, selectedMethod === 'card' && styles.methodTextActive]}>
-                Card / NetBanking
+                {cardLabel}
               </Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.trustRow}>
-            <Text style={styles.trustText}>🔒 100% Secure Checkout via Razorpay</Text>
+            <Text style={styles.trustText}>{trustText}</Text>
           </View>
 
           <TouchableOpacity
@@ -101,7 +128,7 @@ export default function RegistrationModal({
             {isRegistering ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.payButtonText}>Pay ₹{competition.entryFee ?? '—'} & Register</Text>
+              <Text style={styles.payButtonText}>{payBtnText}</Text>
             )}
           </TouchableOpacity>
         </Pressable>

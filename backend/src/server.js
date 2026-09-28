@@ -9,6 +9,11 @@ const app = createApp();
 async function start() {
   await connectDB();
   await connectDB.ensureIndexes();
+  if (config.seedOnStart) {
+    const { seedDatabase } = require('./seed/seed');
+    await seedDatabase();
+    console.log('[server] seed data inserted');
+  }
   app.listen(config.port, config.host, () => console.log(`[server] listening on ${config.host}:${config.port}`));
 }
 

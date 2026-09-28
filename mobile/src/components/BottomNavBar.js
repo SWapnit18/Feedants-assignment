@@ -75,7 +75,6 @@ export default function BottomNavBar({
               {tab.isAvatar ? (
                 <ProfileAvatar
                   name={effectiveName}
-                  imageUrl={effectiveImage}
                   size={24}
                   fontSize={11}
                   isActive={isActive}

@@ -11,6 +11,8 @@ const client = axios.create({
   timeout: 15000,
 });
 
+if (Platform.OS === 'web') globalThis.__feedantsApiClient = client;
+
 client.interceptors.request.use(async (config) => {
   try {
     const token = await AsyncStorage.getItem('auth_token');

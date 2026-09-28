@@ -69,7 +69,9 @@ export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
         <View style={styles.statCol}>
           <Text style={styles.statLabel}>{t(lang, 'prizePool')}</Text>
           <Text style={styles.prizePoolValue}>
-            {prizePool == null ? '—' : `${currencySymbol}${prizePool.toLocaleString('en-IN')}`}
+            {prizePool == null
+              ? '—'
+              : `${currencySymbol}${Math.round(prizePool >= 10000 ? prizePool / 100 : prizePool).toLocaleString('en-IN')}`}
           </Text>
         </View>
 

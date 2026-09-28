@@ -7,28 +7,50 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../theme';
 import BottomNavBar from '../components/BottomNavBar';
 import ProfileAvatar from '../components/ProfileAvatar';
-
 import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useCreateCompetition } from '../hooks/useCompetitionDetails';
 
 export default function CreateScreen({ navigation }) {
   const { user } = useCurrentUser();
+  const createMutation = useCreateCompetition();
+
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Classical Dance');
-  const [prizePool, setPrizePool] = useState('1500');
+  const [prizePool, setPrizePool] = useState('150000');
   const [entryFee, setEntryFee] = useState('99');
+  const [about, setAbout] = useState('');
   const [created, setCreated] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleCreate = () => {
-    setCreated(true);
-    setTimeout(() => {
-      navigation?.navigate('CompetitionDetails');
-    }, 1200);
+  const handleCreate = async () => {
+    if (!title.trim()) {
+      setError('Please enter a competition title');
+      return;
+    }
+    setError('');
+    try {
+      const res = await createMutation.mutateAsync({
+        title: title.trim(),
+        category: category.trim() || 'Classical Dance',
+        prizePool: Number(prizePool) || 50000,
+        entryFee: Number(entryFee) || 0,
+        about: about.trim() || undefined,
+      });
+
+      setCreated(true);
+      setTimeout(() => {
+        const newSlug = res?.competition?.slug || res?.competition?.id || 'feedants-classical-dance';
+        navigation?.navigate('CompetitionDetails', { competitionId: newSlug });
+      }, 1200);
+    } catch (err) {
+      setError(err.message || 'Failed to create competition');
+    }
   };
 
   return (
@@ -53,7 +75,7 @@ export default function CreateScreen({ navigation }) {
           accessibilityLabel="View Profile"
         >
           <ProfileAvatar
-            name={user?.name}
+            name={user?.name || 'User'}
             imageUrl={user?.profileImage || user?.photoUrl}
             size={34}
             fontSize={15}
@@ -76,11 +98,17 @@ export default function CreateScreen({ navigation }) {
               Set up your verified competition with escrow prize pool and automated judging parameters.
             </Text>
 
+            {error ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Competition Title</Text>
+              <Text style={styles.label}>Competition Title *</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. Feedants Classical Dance"
+                placeholder="e.g. Feedants Classical Dance Championship"
                 value={title}
                 onChangeText={setTitle}
               />
@@ -90,7 +118,7 @@ export default function CreateScreen({ navigation }) {
               <Text style={styles.label}>Category</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. Classical Dance"
+                placeholder="e.g. Classical Dance, Bollywood, Folk"
                 value={category}
                 onChangeText={setCategory}
               />
@@ -118,8 +146,28 @@ export default function CreateScreen({ navigation }) {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.submitBtn} onPress={handleCreate} activeOpacity={0.85}>
-              <Text style={styles.submitBtnText}>Publish Competition</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>About the Competition (Optional)</Text>
+              <TextInput
+                style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+                placeholder="Describe rules, eligible art forms, judging criteria..."
+                value={about}
+                onChangeText={setAbout}
+                multiline
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.submitBtn, createMutation.isPending && styles.submitBtnDisabled]}
+              onPress={handleCreate}
+              disabled={createMutation.isPending}
+              activeOpacity={0.85}
+            >
+              {createMutation.isPending ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.submitBtnText}>Publish Competition</Text>
+              )}
             </TouchableOpacity>
           </>
         )}
@@ -191,6 +239,17 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: spacing(4),
   },
+  errorBox: {
+    backgroundColor: '#FEE2E2',
+    borderRadius: radius.sm,
+    padding: spacing(2.5),
+    marginBottom: spacing(3),
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   inputGroup: {
     marginBottom: spacing(3.5),
   },
@@ -220,6 +279,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing(3.5),
     alignItems: 'center',
     marginTop: spacing(3),
+  },
+  submitBtnDisabled: {
+    backgroundColor: '#94A3B8',
   },
   submitBtnText: {
     color: '#FFFFFF',

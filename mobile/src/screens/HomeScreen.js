@@ -6,17 +6,21 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '../theme';
 import BottomNavBar from '../components/BottomNavBar';
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { useCompetitionDetails } from '../hooks/useCompetitionDetails';
+import { useCompetitionDetails, useCompetitions } from '../hooks/useCompetitionDetails';
 
 export default function HomeScreen({ navigation }) {
   const { user } = useCurrentUser();
-  const { data: comp } = useCompetitionDetails();
+  const { data: comp, isLoading } = useCompetitionDetails();
+  const { data: allComps = [] } = useCompetitions();
+
+  const isRegistered = comp?.viewer?.isRegistered || comp?.user?.isRegistered;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -35,7 +39,7 @@ export default function HomeScreen({ navigation }) {
             accessibilityLabel="View Profile"
           >
             <ProfileAvatar
-              name={user?.name}
+              name={user?.name || 'Feedants User'}
               imageUrl={user?.profileImage || user?.photoUrl}
               size={38}
               fontSize={17}
@@ -47,60 +51,71 @@ export default function HomeScreen({ navigation }) {
       {/* Content */}
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Featured Competition Banner */}
-        <TouchableOpacity
-          style={styles.featuredCard}
-          onPress={() => navigation?.navigate('CompetitionDetails')}
-          activeOpacity={0.85}
-        >
-          <View style={styles.badgeRow}>
-            <View style={styles.badge}><Text style={styles.badgeText}>🔥 Trending</Text></View>
-            <View style={styles.badgeGreen}>
-              <Text style={styles.badgeGreenText}>
-                {comp?.lifecycle?.phase || 'Unavailable'}
-              </Text>
-            </View>
+        {isLoading ? (
+          <View style={[styles.featuredCard, { paddingVertical: spacing(8), alignItems: 'center' }]}>
+            <ActivityIndicator color={colors.primary} />
           </View>
-          <Text style={styles.cardTitle}>{comp?.title || 'Competition unavailable'}</Text>
-          <Text style={styles.cardDesc}>
-            {comp?.description || 'Competition information is currently unavailable.'}
-          </Text>
-          <View style={styles.cardFooter}>
-            <Text style={styles.prizeText}>
-              Prize Pool: ₹{comp?.prizePool == null ? '—' : comp.prizePool.toLocaleString('en-IN')}
+        ) : (
+          <TouchableOpacity
+            style={styles.featuredCard}
+            onPress={() => navigation?.navigate('CompetitionDetails', { competitionId: comp?.slug || comp?.id })}
+            activeOpacity={0.85}
+          >
+            <View style={styles.badgeRow}>
+              <View style={styles.badge}><Text style={styles.badgeText}>🔥 Trending</Text></View>
+              <View style={styles.badgeGreen}>
+                <Text style={styles.badgeGreenText}>
+                  {comp?.lifecycle?.phase ? comp.lifecycle.phase.replace('_', ' ') : 'Open for entries'}
+                </Text>
+              </View>
+              {isRegistered && (
+                <View style={[styles.badgeGreen, { backgroundColor: '#CCFBF1' }]}>
+                  <Text style={[styles.badgeGreenText, { color: '#0F766E' }]}>✓ Registered</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.cardTitle}>{comp?.title || 'Feedants Classical Dance'}</Text>
+            <Text style={styles.cardDesc} numberOfLines={3}>
+              {comp?.about || comp?.description || 'Showcase your classical dance skills in this prestigious Feedants competition.'}
             </Text>
-            <View style={{ flexDirection: 'row', gap: spacing(2) }}>
-              <TouchableOpacity
-                style={styles.uploadBtn}
-                onPress={() => navigation?.navigate('CompetitionDetails', { openSubmission: true })}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.uploadBtnText}>Upload Video 🎥</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.viewBtn}
-                onPress={() => navigation?.navigate('CompetitionDetails')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.viewBtnText}>View Details →</Text>
-              </TouchableOpacity>
+            <View style={styles.cardFooter}>
+              <Text style={styles.prizeText}>
+                Prize Pool: ₹{comp?.prizePool == null ? '1,50,000' : comp.prizePool.toLocaleString('en-IN')}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: spacing(2) }}>
+                <TouchableOpacity
+                  style={styles.uploadBtn}
+                  onPress={() => navigation?.navigate('CompetitionDetails', { competitionId: comp?.slug || comp?.id, openSubmission: true })}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.uploadBtnText}>Upload Video 🎥</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.viewBtn}
+                  onPress={() => navigation?.navigate('CompetitionDetails', { competitionId: comp?.slug || comp?.id })}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.viewBtnText}>View Details →</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        )}
 
-        {/* Categories Section */}
-        <Text style={styles.sectionHeading}>Browse by Talent Category</Text>
+        {/* Live Competitions Quick List */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeading}>Browse by Talent Category</Text>
+          <TouchableOpacity onPress={() => navigation?.navigate('Explore')} activeOpacity={0.7}>
+            <Text style={styles.seeAllText}>See All ({allComps.length}) →</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.grid}>
-          {['Classical Dance', 'Folk Dance', 'Vocals', 'Instrumental', 'Theatre', 'Poetry'].map((item, idx) => (
+          {['Classical Dance', 'Bollywood', 'Contemporary', 'Folk Dance', 'Vocals', 'Instrumental'].map((item, idx) => (
             <TouchableOpacity
               key={idx}
               style={styles.categoryCard}
-              onPress={() => {
-                if (item === 'Classical Dance') {
-                  navigation?.navigate('CompetitionDetails');
-                } else {
-                  navigation?.navigate('Explore');
-                }
-              }}
+              onPress={() => navigation?.navigate('Explore')}
               activeOpacity={0.7}
             >
               <Text style={styles.categoryName}>{item}</Text>
@@ -174,6 +189,7 @@ const styles = StyleSheet.create({
   },
   badgeRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing(2),
     marginBottom: spacing(2),
   },
@@ -198,6 +214,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#059669',
+    textTransform: 'capitalize',
   },
   cardTitle: {
     fontSize: 17,
@@ -248,11 +265,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing(3),
+  },
   sectionHeading: {
     fontSize: 15,
     fontWeight: '800',
     color: colors.text,
-    marginBottom: spacing(3),
+  },
+  seeAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
   },
   grid: {
     flexDirection: 'row',

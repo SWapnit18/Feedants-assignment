@@ -27,8 +27,8 @@ function competitionData(overrides = {}) {
     category: overrides.category || 'Dance',
     tags: overrides.tags || [],
     certificate: true,
-    prizePool: overrides.prizePool ?? 150000,
-    entryFee: overrides.entryFee ?? 9900,
+    prizePool: overrides.prizePool ?? 1500,
+    entryFee: overrides.entryFee ?? 99,
     currency: 'INR',
     capacity: overrides.capacity ?? 20,
     bookedCount: overrides.bookedCount ?? 0,
@@ -65,22 +65,13 @@ async function seedDatabase() {
     slug: 'feedants-classical-dance',
     title: { en: 'Feedants Classical Dance', hi: 'फीडेंट्स शास्त्रीय नृत्य' },
     tags: ['Dance', 'Multi-Win'],
-    prizePool: 150000,
-    entryFee: 9900,
+    prizePool: 1500,
+    entryFee: 99,
     capacity: 20,
     bookedCount: 1,
-    rewards: [55000, 30000, 24000, 20000, 13000, 8000].map((amount, index) => ({ position: index + 1, label: { en: `${index + 1} Winner`, hi: `${index + 1} विजेता` }, amount })),
+    rewards: [550, 300, 240, 200, 130, 80].map((amount, index) => ({ position: index + 1, label: { en: `${index + 1} Winner`, hi: `${index + 1} विजेता` }, amount })),
   }));
   await Registration.create({ competitionId: main._id, userId: priya._id, status: 'confirmed', amount: main.entryFee, currency: 'INR', confirmedAt: new Date() });
-  await Winner.create([1, 2, 3, 4].map((position) => ({
-    competitionId: main._id,
-    userId: [priya, rahul, sneha, amit][position - 1]._id,
-    name: ['Participant One', 'Participant Two', 'Participant Three', 'Participant Four'][position - 1],
-    position,
-    positionLabel: `${position} Winner`,
-    prize: String([55000, 30000, 24000, 20000][position - 1]),
-    year: String(2025 - position + 1),
-  })));
 
   const full = await Competition.create(competitionData({ slug: 'feedants-bharatanatyam-open', capacity: 20, bookedCount: 20 }));
   await Registration.create([amit, priya, rahul, sneha, ...fillerUsers].map((user) => ({

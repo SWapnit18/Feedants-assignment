@@ -52,7 +52,7 @@ export default function ImportantDatesCard({ dates = {}, lang = 'ENG' }) {
         <DateCell
           iconComponent={<TrophyOutlineIcon size={20} color="#0F766E" />}
           label={t(lang, 'resultDate')}
-          iso={dates.resultDate}
+          iso={dates.resultAt || dates.resultDate}
         />
       </View>
     </View>

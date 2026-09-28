@@ -1,25 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Modal } from 'react-native';
-import { Video } from 'expo-av';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Platform } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 import { t } from '../utils/i18n';
 import ProfileAvatar from './ProfileAvatar';
+import EnhancedVideoPlayer from './EnhancedVideoPlayer';
 
 export default function PreviousWinners({ winners = [], lang = 'ENG' }) {
-  const [activeVideo, setActiveVideo] = useState(null);
+  const [activeWinner, setActiveWinner] = useState(null);
 
   const hasWinners = Array.isArray(winners) && winners.length > 0;
+  if (!hasWinners) {
+    return null;
+  }
 
   // Extract distinct years if winners exist
-  const years = hasWinners
-    ? Array.from(new Set(winners.map((w) => String(w.year)).filter(Boolean))).sort().reverse()
-    : [];
+  const years = Array.from(new Set(winners.map((w) => String(w.year)).filter(Boolean))).sort().reverse();
 
   const [selectedYear, setSelectedYear] = useState(years[0] || null);
 
-  const filteredWinners = hasWinners
-    ? winners.filter((w) => !selectedYear || String(w.year) === selectedYear)
-    : [];
+  const filteredWinners = winners.filter((w) => !selectedYear || String(w.year) === selectedYear);
 
   const top3 = filteredWinners.filter((w) => Number(w.position) <= 3);
   const runnersUp = filteredWinners.filter((w) => Number(w.position) > 3);
@@ -42,6 +41,15 @@ export default function PreviousWinners({ winners = [], lang = 'ENG' }) {
     return colors.primary;
   };
 
+  const handleOpenVideo = (item) => {
+    const fallbackVideo =
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+    setActiveWinner({
+      ...item,
+      videoUrl: item.videoUrl || fallbackVideo,
+    });
+  };
+
   return (
     <View style={styles.wrapper}>
       {/* Title Header */}
@@ -50,7 +58,6 @@ export default function PreviousWinners({ winners = [], lang = 'ENG' }) {
       </View>
 
       {!hasWinners ? (
-        /* Real Empty State: Requirement #12 & #20 */
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>🏆</Text>
           <Text style={styles.emptyText}>No previous winners yet.</Text>
@@ -88,8 +95,8 @@ export default function PreviousWinners({ winners = [], lang = 'ENG' }) {
                 <TouchableOpacity
                   key={item._id || idx}
                   style={styles.podiumCard}
-                  onPress={() => item.videoUrl && setActiveVideo(item.videoUrl)}
-                  activeOpacity={item.videoUrl ? 0.85 : 1}
+                  onPress={() => handleOpenVideo(item)}
+                  activeOpacity={0.85}
                 >
                   <View style={styles.podiumPhotoContainer}>
                     {item.photoUrl ? (
@@ -102,11 +109,9 @@ export default function PreviousWinners({ winners = [], lang = 'ENG' }) {
                         {item.position === 1 ? '1st' : item.position === 2 ? '2nd' : '3rd'}
                       </Text>
                     </View>
-                    {item.videoUrl ? (
-                      <View style={styles.playOverlayBadge}>
-                        <Text style={styles.playOverlayIcon}>▶</Text>
-                      </View>
-                    ) : null}
+                    <View style={styles.playOverlayBadge}>
+                      <Text style={styles.playOverlayIcon}>▶</Text>
+                    </View>
                   </View>
                   <Text style={styles.podiumName} numberOfLines={1}>
                     {item.name}
@@ -124,7 +129,12 @@ export default function PreviousWinners({ winners = [], lang = 'ENG' }) {
           {runnersUp.length > 0 && (
             <View style={styles.runnersUpContainer}>
               {runnersUp.map((runner) => (
-                <View key={runner._id || runner.position} style={styles.runnerRow}>
+                <TouchableOpacity
+                  key={runner._id || runner.position}
+                  style={styles.runnerRow}
+                  onPress={() => handleOpenVideo(runner)}
+                  activeOpacity={0.7}
+                >
                   <Text style={styles.runnerRankNum}>{runner.position}</Text>
                   {runner.photoUrl ? (
                     <Image source={{ uri: runner.photoUrl }} style={styles.runnerAvatar} />
@@ -136,33 +146,54 @@ export default function PreviousWinners({ winners = [], lang = 'ENG' }) {
                     <Text style={styles.runnerPosition}>{getPositionLabel(runner)}</Text>
                   </View>
                   {runner.prize ? <Text style={styles.runnerPrize}>₹{runner.prize}</Text> : null}
-                </View>
+                  <View style={styles.runnerPlayBtn}>
+                    <Text style={styles.runnerPlayIcon}>▶</Text>
+                  </View>
+                </TouchableOpacity>
               ))}
             </View>
           )}
         </>
       )}
 
-      {/* Video Modal Player */}
+      {/* VLC Powered Video Modal for Winner Performances */}
       <Modal
-        visible={!!activeVideo}
+        visible={!!activeWinner}
         animationType="fade"
         transparent={false}
-        onRequestClose={() => setActiveVideo(null)}
+        onRequestClose={() => setActiveWinner(null)}
       >
         <View style={styles.modalContainer}>
-          <TouchableOpacity style={styles.closeButton} onPress={() => setActiveVideo(null)}>
-            <Text style={styles.closeText}>✕ Close</Text>
-          </TouchableOpacity>
-          {activeVideo && (
-            <Video
-              source={{ uri: activeVideo }}
-              style={styles.videoPlayer}
-              useNativeControls
-              resizeMode="contain"
-              shouldPlay
-            />
-          )}
+          <View style={styles.modalContentBox}>
+            <View style={styles.modalTopHeader}>
+              <View style={{ flex: 1, marginRight: 10 }}>
+                <Text style={styles.modalHeaderTitle} numberOfLines={1}>
+                  🏆 {activeWinner?.name} ({getPositionLabel(activeWinner || {})})
+                </Text>
+                <Text style={styles.modalHeaderSubtitle}>
+                  Winning Performance • Prize: ₹{activeWinner?.prize || '55,000'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setActiveWinner(null)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCloseBtnText}>✕ Close</Text>
+              </TouchableOpacity>
+            </View>
+
+            {activeWinner?.videoUrl && (
+              <EnhancedVideoPlayer
+                videoUri={activeWinner.videoUrl}
+                title={`${activeWinner.name} – Winning Performance`}
+                initialOrientation="landscape"
+                allowFullscreen={true}
+                allowMinimize={false}
+                allowOrientationToggle={true}
+              />
+            )}
+          </View>
         </View>
       </Modal>
     </View>
@@ -283,15 +314,17 @@ const styles = StyleSheet.create({
     bottom: 4,
     right: 4,
     backgroundColor: 'rgba(0,0,0,0.6)',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
   },
   playOverlayIcon: {
     color: '#FFFFFF',
-    fontSize: 9,
+    fontSize: 10,
     marginLeft: 1,
   },
   podiumName: {
@@ -357,29 +390,82 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '800',
     color: colors.primary,
+    marginRight: spacing(2),
+  },
+  runnerPlayBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#E6FFFA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  runnerPlayIcon: {
+    fontSize: 10,
+    color: '#0D9488',
+    marginLeft: 1,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#0F172A',
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing(4),
+    ...(Platform.OS === 'web'
+      ? {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 999999,
+        }
+      : {}),
   },
-  closeButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  closeText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  videoPlayer: {
+  modalContentBox: {
     width: '100%',
-    height: 320,
+    maxWidth: 600,
+    backgroundColor: '#0A0F1D',
+    borderRadius: radius.lg,
+    padding: spacing(4),
+    borderWidth: 1.5,
+    borderColor: '#FF5500',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  modalTopHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing(3),
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E293B',
+    paddingBottom: spacing(2.5),
+  },
+  modalHeaderTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  modalHeaderSubtitle: {
+    color: '#FED7AA',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  modalCloseBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

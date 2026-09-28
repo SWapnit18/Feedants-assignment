@@ -47,6 +47,9 @@ export default function RewardsList({ rewards = [], currency = 'INR', disclaimer
         const winnerKey = WINNER_KEYS[r.position];
         const label = winnerKey ? t(lang, winnerKey) : (r.label || `${r.position}th Winner`);
 
+        const amountNum = typeof r.amount === 'number' ? r.amount : Number(r.amount) || 0;
+        const displayAmount = (amountNum >= 1000 ? Math.round(amountNum / 100) : amountNum).toLocaleString('en-IN');
+
         return (
           <View key={r.position || index} style={styles.row}>
             <View style={styles.iconBox}>
@@ -54,7 +57,7 @@ export default function RewardsList({ rewards = [], currency = 'INR', disclaimer
             </View>
             <Text style={styles.label}>{label}</Text>
             <Text style={styles.amount}>
-              {currency === 'INR' ? '₹ ' : ''}{r.amount}
+              {currency === 'INR' ? '₹ ' : ''}{displayAmount}
             </Text>
           </View>
         );

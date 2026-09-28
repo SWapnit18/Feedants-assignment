@@ -83,3 +83,9 @@ export async function login(email, password) {
   const { data } = await client.post('/auth/login', { email, password });
   return unwrap(data);
 }
+
+export async function createCompetition(payload) {
+  const { data } = await client.post('/competitions', payload);
+  return unwrap(data);
+}
+

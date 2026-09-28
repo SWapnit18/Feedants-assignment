@@ -27,7 +27,7 @@ export default function BottomActionBar({ action, isSubmitting, onPress, lang = 
       <TouchableOpacity
         style={[styles.button, isDisabled && styles.buttonDisabled]}
         disabled={isDisabled}
-        onPress={() => onPress(action.action)}
+        onPress={() => onPress(action.action || action.type || 'REGISTER')}
         activeOpacity={0.88}
       >
         {isSubmitting ? (

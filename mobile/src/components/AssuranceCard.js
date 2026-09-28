@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
-import { Video } from 'expo-av';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 import { ShieldOutlineIcon } from './MinimalIcons';
-
 import { t } from '../utils/i18n';
+import EnhancedVideoPlayer from './EnhancedVideoPlayer';
 
 export default function AssuranceCard({ videoUrl, onOpenPolicy, lang = 'ENG' }) {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+
+  const effectiveVideoUrl =
+    videoUrl ||
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
 
   return (
     <View style={styles.card}>
@@ -59,20 +62,41 @@ export default function AssuranceCard({ videoUrl, onOpenPolicy, lang = 'ENG' }) 
         </TouchableOpacity>
       </View>
 
-      {/* Video Modal */}
-      <Modal visible={isVideoOpen} animationType="slide" transparent={false} onRequestClose={() => setIsVideoOpen(false)}>
+      {/* VLC Powered Video Modal for Prize Money Explainer */}
+      <Modal
+        visible={isVideoOpen}
+        animationType="fade"
+        transparent={false}
+        onRequestClose={() => setIsVideoOpen(false)}
+      >
         <View style={styles.modalContainer}>
-          <TouchableOpacity style={styles.closeButton} onPress={() => setIsVideoOpen(false)}>
-            <Text style={styles.closeText}>✕ Close</Text>
-          </TouchableOpacity>
-          <View style={styles.videoWrapper}>
-              {videoUrl ? <Video
-              source={{ uri: videoUrl }}
-              style={styles.video}
-              useNativeControls
-              resizeMode="contain"
-              shouldPlay
-            /> : null}
+          <View style={styles.modalContentBox}>
+            <View style={styles.modalTopHeader}>
+              <View style={{ flex: 1, marginRight: 10 }}>
+                <Text style={styles.modalHeaderTitle} numberOfLines={1}>
+                  💰 Prize Money Distribution Explainer
+                </Text>
+                <Text style={styles.modalHeaderSubtitle}>
+                  Learn how prize money is distributed securely via Razorpay
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setIsVideoOpen(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCloseBtnText}>✕ Close</Text>
+              </TouchableOpacity>
+            </View>
+
+            <EnhancedVideoPlayer
+              videoUri={effectiveVideoUrl}
+              title="Prize Money Explainer"
+              initialOrientation="landscape"
+              allowFullscreen={true}
+              allowMinimize={false}
+              allowOrientationToggle={true}
+            />
           </View>
         </View>
       </Modal>
@@ -147,10 +171,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing(1.5),
   },
-  shieldIcon: {
-    fontSize: 13,
-    marginRight: spacing(1.5),
-  },
   policyText: {
     fontSize: 11,
     color: colors.textSecondary,
@@ -183,31 +203,65 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#0A0E1A',
+    backgroundColor: '#0F172A',
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing(4),
+    ...(Platform.OS === 'web'
+      ? {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 999999,
+        }
+      : {}),
   },
-  closeButton: {
-    position: 'absolute',
-    top: 52,
-    right: 20,
-    zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  closeText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  videoWrapper: {
+  modalContentBox: {
     width: '100%',
-    height: 320,
-    backgroundColor: '#000',
+    maxWidth: 600,
+    backgroundColor: '#0A0F1D',
+    borderRadius: radius.lg,
+    padding: spacing(4),
+    borderWidth: 1.5,
+    borderColor: '#FF5500',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 8,
   },
-  video: {
-    width: '100%',
-    height: '100%',
+  modalTopHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing(3),
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E293B',
+    paddingBottom: spacing(2.5),
+  },
+  modalHeaderTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  modalHeaderSubtitle: {
+    color: '#FED7AA',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  modalCloseBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

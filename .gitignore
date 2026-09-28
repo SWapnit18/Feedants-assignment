@@ -33,3 +33,8 @@ Thumbs.db
 data/
 uploads/*
 !uploads/.gitkeep
+backend/.local-mongo/
+
+# Temp probe / debug files
+expo-check.png
+mobile/browser-probe.mjs
