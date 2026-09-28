@@ -14,6 +14,18 @@ const globalLimiter = config.rateLimit.enabled
   ? rateLimit({ windowMs: config.rateLimit.windowMs, limit: config.rateLimit.max, standardHeaders: 'draft-7', legacyHeaders: false, handler })
   : passthrough;
 
+/** Stricter limiter for authentication routes to prevent brute-force attacks. */
+const authLimiter = config.rateLimit.enabled
+  ? rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      limit: 10, // 10 attempts per 15 minutes
+      standardHeaders: 'draft-7',
+      legacyHeaders: false,
+      handler: (_req, _res, next) =>
+        next(new AppError('RATE_LIMITED', 'Too many login attempts, please try again later.', { details: { retryAfterMs: 15 * 60 * 1000 } })),
+    })
+  : passthrough;
+
 /** Stricter limiter for money/seat-touching mutations, keyed per user. */
 const mutationLimiter = config.rateLimit.enabled
   ? rateLimit({
@@ -26,4 +38,4 @@ const mutationLimiter = config.rateLimit.enabled
     })
   : passthrough;
 
-module.exports = { globalLimiter, mutationLimiter };
+module.exports = { globalLimiter, mutationLimiter, authLimiter };

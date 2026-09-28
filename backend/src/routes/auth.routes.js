@@ -5,12 +5,14 @@ const { z } = require('zod');
 const ctrl = require('../controllers/auth.controller');
 const { requireAuth } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
+const { authLimiter } = require('../middleware/rateLimit');
 const config = require('../config');
 
 const authRouter = Router();
 
 authRouter.post(
   ['/sign-in', '/signin', '/login'],
+  authLimiter,
   validate({
     body: z.object({
       email: z.string().trim().toLowerCase().email().max(254),
@@ -22,6 +24,7 @@ authRouter.post(
 
 authRouter.post(
   ['/sign-up', '/signup'],
+  authLimiter,
   validate({
     body: z.object({
       name: z.string().trim().min(1, 'Name is required').max(120),
