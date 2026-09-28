@@ -4,8 +4,8 @@
   "description": "Backend for the Feedants Competition Details feature",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
+    "start": "node mock-server.js",
+    "dev": "nodemon mock-server.js",
     "seed": "node src/seed/seed.js",
     "test": "node test_suite.js && node security_test_suite.js && node --test test/*.js",
     "test:security": "node security_test_suite.js"
