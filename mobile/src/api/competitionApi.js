@@ -1,35 +1,73 @@
 import client from './client';
+import {
+  MOCK_COMPETITION,
+  MOCK_COMPETITIONS_LIST,
+  MOCK_TESTIMONIALS,
+} from './mockData';
 
 const unwrap = (data) => data?.data || data;
 const idempotencyKey = () =>
   globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
+/** True when the error is a connectivity / server-not-running error */
+const isOfflineError = (err) => {
+  const code = err?.code || '';
+  const msg = (err?.message || '').toLowerCase();
+  return (
+    code === 'ECONNREFUSED' ||
+    code === 'ERR_NETWORK' ||
+    code === 'NETWORK_ERROR' ||
+    msg.includes('network error') ||
+    msg.includes('econnrefused') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('err_connection_refused') ||
+    // axios timeout / no response
+    err?.response === undefined
+  );
+};
+
 export async function fetchCompetitions() {
-  const { data } = await client.get('/competitions');
-  return unwrap(data).items || [];
+  try {
+    const { data } = await client.get('/competitions');
+    return unwrap(data).items || [];
+  } catch (err) {
+    if (isOfflineError(err)) {
+      console.warn('[competitionApi] Offline: using mock competitions list');
+      return MOCK_COMPETITIONS_LIST;
+    }
+    throw err;
+  }
 }
 
 export async function fetchCompetitionDetails(competitionId) {
   if (!competitionId) throw new Error('No competition was selected.');
 
-  const { data } = await client.get(`/competitions/${competitionId}`);
-  const body = unwrap(data);
-  const competition = body.competition || {};
-  return {
-    ...competition,
-    availability: body.availability,
-    lifecycle: body.lifecycle,
-    viewer: body.viewer,
-    action: body.viewer?.primaryAction || body.anonymousAction,
-    dates: { ...competition.dates, serverTime: body.serverTime },
-    state: body.lifecycle?.phase,
-    countdownTargetAt: body.lifecycle?.nextDeadline?.at || null,
-    about: competition.tabs?.about || '',
-    judgingParameters: competition.tabs?.judgingParameters || [],
-    rulesAndEligibility: competition.tabs?.rulesAndEligibility || [],
-    disclaimerText: competition.disclaimer || '',
-    prizeMoneyInfoVideoUrl: competition.prizeInfoVideoUrl || null,
-  };
+  try {
+    const { data } = await client.get(`/competitions/${competitionId}`);
+    const body = unwrap(data);
+    const competition = body.competition || {};
+    return {
+      ...competition,
+      availability: body.availability,
+      lifecycle: body.lifecycle,
+      viewer: body.viewer,
+      action: body.viewer?.primaryAction || body.anonymousAction,
+      dates: { ...competition.dates, serverTime: body.serverTime },
+      state: body.lifecycle?.phase,
+      countdownTargetAt: body.lifecycle?.nextDeadline?.at || null,
+      about: competition.tabs?.about || '',
+      judgingParameters: competition.tabs?.judgingParameters || [],
+      rulesAndEligibility: competition.tabs?.rulesAndEligibility || [],
+      disclaimerText: competition.disclaimer || '',
+      prizeMoneyInfoVideoUrl: competition.prizeInfoVideoUrl || null,
+    };
+  } catch (err) {
+    if (isOfflineError(err)) {
+      console.warn('[competitionApi] Offline: using mock competition details');
+      return { ...MOCK_COMPETITION };
+    }
+    throw err;
+  }
 }
 
 export async function registerForCompetition(competitionId, payload = {}) {
@@ -75,8 +113,16 @@ export async function fetchPreviousWinners(competitionId) {
 
 export async function fetchReviews(competitionId) {
   if (!competitionId) return [];
-  const { data } = await client.get(`/competitions/${competitionId}/testimonials`);
-  return unwrap(data).items || [];
+  try {
+    const { data } = await client.get(`/competitions/${competitionId}/testimonials`);
+    return unwrap(data).items || [];
+  } catch (err) {
+    if (isOfflineError(err)) {
+      console.warn('[competitionApi] Offline: using mock testimonials');
+      return MOCK_TESTIMONIALS;
+    }
+    throw err;
+  }
 }
 
 export async function login(email, password) {

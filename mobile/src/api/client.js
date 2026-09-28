@@ -8,7 +8,7 @@ export const API_BASE_URL =
 
 const client = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 4000,
 });
 
 if (Platform.OS === 'web') globalThis.__feedantsApiClient = client;
