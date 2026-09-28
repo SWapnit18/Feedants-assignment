@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "build": "cd mobile && npm install && npx expo export -p web --output-dir ../public"
+  }
+}
