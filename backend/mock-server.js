@@ -1,7 +1,7 @@
 'use strict';
 const http = require('http');
 const crypto = require('crypto');
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 const DAY = 24 * 60 * 60 * 1000;
 const n = Date.now();
 const iso = (d) => (d ? new Date(d).toISOString() : null);
