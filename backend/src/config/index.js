@@ -91,7 +91,7 @@ module.exports = Object.freeze({
     mutationMax: env.RATE_LIMIT_MUTATION_MAX,
   },
   upload: {
-    dir: path.resolve(__dirname, '../..', env.UPLOAD_DIR),
+    dir: process.env.VERCEL ? path.join('/tmp', 'uploads') : path.resolve(__dirname, '../..', env.UPLOAD_DIR),
     maxBytes: env.UPLOAD_MAX_BYTES,
   },
   referral: {

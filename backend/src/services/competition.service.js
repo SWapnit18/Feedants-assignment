@@ -120,7 +120,8 @@ const serializeSubmission = (s) =>
     ? {
         id: String(s._id),
         status: s.status,
-        mediaUrl: s.mediaUrl,
+        mediaUrl: s.mediaUrl || s.videoUrl,
+        videoUrl: s.mediaUrl || s.videoUrl,
         caption: s.caption ?? s.description ?? null,
         submittedAt: iso(s.submittedAt || s.createdAt),
       }
@@ -144,8 +145,21 @@ async function getCompetitionDetails(idOrSlug, userId, lang) {
     const released = await releaseExpiredHolds({ competitionId: competition._id, userId });
     if (released > 0) competition = await findCompetition(String(competition._id));
     [registration, submission] = await Promise.all([
-      Registration.findOne({ competitionId: competition._id, userId, status: { $in: ACTIVE_STATUSES } }).lean(),
-      Submission.findOne({ competitionId: competition._id, userId }).lean(),
+      Registration.findOne({
+        $or: [
+          { competitionId: competition._id, userId },
+          { competition: competition._id, user: userId },
+        ],
+        status: { $in: ACTIVE_STATUSES },
+      }).lean(),
+      Submission.findOne({
+        $or: [
+          { competitionId: competition._id, userId },
+          { competition: competition._id, user: userId },
+        ],
+      })
+        .sort({ createdAt: -1 })
+        .lean(),
     ]);
   }
 

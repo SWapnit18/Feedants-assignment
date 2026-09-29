@@ -1,7 +1,7 @@
 'use strict';
 
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, Submission, Registration } = require('../models');
 const { AppError } = require('../utils/AppError');
 const { randomId, isObjectId } = require('../utils/ids');
 const { isDuplicateKeyError } = require('../utils/transaction');
@@ -104,7 +104,54 @@ async function listUsers() {
 async function getUser(userId) {
   const user = isObjectId(userId) ? await User.findById(userId).lean() : null;
   if (!user) throw new AppError('UNAUTHENTICATED', 'User no longer exists');
-  return { user: serializeUser(user) };
+
+  const rawSubmissions = await Submission.find({
+    $or: [{ userId: user._id }, { user: user._id }],
+  })
+    .populate('competitionId', 'title category slug')
+    .populate('competition', 'title category slug')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const userSubmissions = (rawSubmissions || []).map((s) => {
+    const comp = s.competitionId || s.competition || {};
+    const compTitle =
+      typeof comp.title === 'string'
+        ? comp.title
+        : comp.title?.en || s.title || 'Feedants Dance Competition';
+    return {
+      id: String(s._id),
+      competitionId: comp._id ? String(comp._id) : undefined,
+      competitionSlug: comp.slug || 'feedants-classical-dance',
+      competitionTitle: compTitle,
+      competitionCategory: comp.category || 'Dance Competition',
+      status: s.status || 'Submitted',
+      mediaUrl: s.mediaUrl || s.videoUrl,
+      videoUrl: s.mediaUrl || s.videoUrl,
+      fileName: s.fileName || 'performance_video.mp4',
+      fileSize: s.fileSize || '34.8 MB',
+      submittedAt: s.submittedAt
+        ? new Date(s.submittedAt).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })
+        : 'Today',
+    };
+  });
+
+  const registeredCount = await Registration.countDocuments({
+    $or: [{ userId: user._id }, { user: user._id }],
+    status: { $in: ['confirmed', 'active'] },
+  });
+
+  return {
+    user: {
+      ...serializeUser(user),
+      submissions: userSubmissions,
+      registeredCount,
+    },
+  };
 }
 
 async function updateUser(userId, changes) {

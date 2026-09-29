@@ -290,12 +290,23 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
             <View style={styles.mySubActionsRow}>
               <TouchableOpacity
                 style={styles.mySubPlayBtn}
-                onPress={() =>
+                onPress={() => {
+                  let subUrl =
+                    competition?.viewer?.submission?.mediaUrl ||
+                    competition?.viewer?.submission?.videoUrl ||
+                    competition?.user?.submission?.mediaUrl ||
+                    competition?.user?.submission?.videoUrl ||
+                    competition?.submission?.mediaUrl;
+
+                  if (!subUrl) {
+                    subUrl = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+                  }
+
                   setSubmittedVideoPlayback({
                     title: `${typeof competition.title === 'string' ? competition.title : competition.title?.en || 'Performance Entry'} – My Submission`,
-                    uri: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-                  })
-                }
+                    uri: subUrl,
+                  });
+                }}
                 activeOpacity={0.85}
               >
                 <Text style={styles.mySubPlayIcon}>▶</Text>

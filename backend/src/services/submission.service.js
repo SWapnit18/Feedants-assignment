@@ -22,22 +22,28 @@ async function createSubmission(userId, idOrSlug, { mediaUrl, caption }) {
   }).lean();
   if (!registration) throw new AppError('NOT_REGISTERED', 'You must complete registration before submitting');
 
-  try {
-    const submission = await Submission.create({
-      competitionId: competition._id,
-      userId,
-      registrationId: registration._id,
-      mediaUrl,
-      caption: caption ?? null,
-      status: 'received',
-    });
-    return { submission: serializeSubmission(submission.toObject()) };
-  } catch (err) {
-    if (isDuplicateKeyError(err)) {
-      throw new AppError('ALREADY_SUBMITTED', 'You have already submitted an entry');
-    }
-    throw err;
-  }
+  const submission = await Submission.findOneAndUpdate(
+    { competitionId: competition._id, userId },
+    {
+      $set: {
+        competition: competition._id,
+        competitionId: competition._id,
+        user: userId,
+        userId,
+        registration: registration._id,
+        registrationId: registration._id,
+        mediaUrl,
+        videoUrl: mediaUrl,
+        caption: caption ?? null,
+        status: 'received',
+        submittedAt: new Date(),
+        isLatest: true,
+      },
+    },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  );
+
+  return { submission: serializeSubmission(submission.toObject ? submission.toObject() : submission) };
 }
 
 async function getMySubmission(userId, idOrSlug) {

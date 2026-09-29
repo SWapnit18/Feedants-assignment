@@ -35,12 +35,7 @@ router.post(
   validate({
     params,
     body: z.object({
-      mediaUrl: z
-        .string()
-        .trim()
-        .url()
-        .max(2048)
-        .refine((u) => /^https?:\/\//i.test(u), 'mediaUrl must be http(s)'),
+      mediaUrl: z.string().trim().min(1).max(5000000),
       caption: z.string().trim().max(500).optional(),
     }),
   }),

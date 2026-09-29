@@ -58,8 +58,8 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const handlePlaySubmissionVideo = (sub) => {
-    let finalUri = sub.mediaUrl || 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
-    if (finalUri.includes('commondatastorage.googleapis.com/gtv-videos-bucket')) {
+    let finalUri = sub.mediaUrl || sub.videoUrl;
+    if (!finalUri) {
       finalUri = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
     }
     
