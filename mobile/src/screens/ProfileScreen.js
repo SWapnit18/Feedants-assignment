@@ -35,52 +35,63 @@ export default function ProfileScreen({ navigation }) {
   const registeredComps = allComps.filter((c) => c.isRegistered);
   const registeredCount = user?.registeredCount ?? registeredComps.length;
 
-  // Extract real user submissions from backend/database
-  const userSubmissions = Array.isArray(user?.submissions) ? user.submissions : [];
-
-  const handleStartEdit = () => {
-    setNameInput(displayName);
-    setSaveError('');
-    setIsEditing(true);
-  };
-
-  const handleSaveName = async () => {
-    if (!nameInput.trim()) {
-      setSaveError('Name cannot be empty');
-      return;
+  // Deduplicate submissions by competition so only 1 latest submission is shown per contest
+  const uniqueSubmissionsMap = React.useMemo(() => {
+    const map = new Map();
+    for (const sub of userSubmissions) {
+      const key = sub.competitionId || sub.competitionSlug || 'feedants-classical-dance';
+      if (!map.has(key)) {
+        map.set(key, sub);
+      }
     }
-    try {
-      setSaveError('');
-      await updateUser({ name: nameInput.trim() });
-      setIsEditing(false);
-    } catch (err) {
-      setSaveError(err.message || 'Failed to update name');
-    }
-  };
+    return map;
+  }, [userSubmissions]);
 
-  const handlePlaySubmissionVideo = async (sub) => {
-    const compKey = sub.competitionId || sub.competitionSlug || 'featured';
-    const localBlobUrl = await retrieveSubmissionVideoUrl(compKey);
-    const finalUri = localBlobUrl || sub.videoUrl || sub.mediaUrl;
+  // Combine registered competitions and submissions into a single clean list
+  const activeEntries = React.useMemo(() => {
+    const entries = [];
+    const processedComps = new Set();
 
-    if (!finalUri) {
-      alert('Submitted video is unavailable');
-      return;
+    // Add registered competitions with their submission if present
+    for (const comp of registeredComps) {
+      const compKey = comp.id || comp.slug || 'feedants-classical-dance';
+      processedComps.add(compKey);
+      const sub = uniqueSubmissionsMap.get(compKey);
+      entries.push({
+        id: compKey,
+        slug: comp.slug || compKey,
+        title: typeof comp.title === 'string' ? comp.title : comp.title?.en || 'Feedants Classical Dance',
+        category: comp.category || 'Classical Dance',
+        prizePool: comp.prizePool || 1500,
+        submission: sub || null,
+        isRegistered: true,
+      });
     }
-    
-    setActivePlaybackVideo({
-      title: sub.competitionTitle || 'My Performance Entry',
-      uri: finalUri,
-      fileName: sub.videoFileName || sub.fileName || 'performance_video.mp4',
-      status: sub.status || 'Submitted',
-    });
-  };
+
+    // Add any submissions whose comp isn't in registeredComps list
+    for (const [key, sub] of uniqueSubmissionsMap.entries()) {
+      if (!processedComps.has(key)) {
+        processedComps.add(key);
+        entries.push({
+          id: key,
+          slug: sub.competitionSlug || key,
+          title: sub.competitionTitle || 'Classical Dance Competition',
+          category: sub.competitionCategory || 'Classical Dance',
+          prizePool: 1500,
+          submission: sub,
+          isRegistered: true,
+        });
+      }
+    }
+
+    return entries;
+  }, [registeredComps, uniqueSubmissionsMap]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Header with Back Button */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backBtn}
@@ -89,7 +100,7 @@ export default function ProfileScreen({ navigation }) {
         >
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Profile & Submissions</Text>
+        <Text style={styles.headerTitle}>My Profile</Text>
       </View>
 
       {/* Content */}
@@ -102,8 +113,8 @@ export default function ProfileScreen({ navigation }) {
             <>
               <ProfileAvatar
                 name={displayName}
-                size={72}
-                style={{ marginBottom: spacing(2.5) }}
+                size={68}
+                style={{ marginBottom: spacing(2) }}
               />
               <View style={styles.nameRow}>
                 <Text style={styles.userName}>{displayName}</Text>
@@ -117,7 +128,7 @@ export default function ProfileScreen({ navigation }) {
               </View>
               <Text style={styles.userEmail}>{displayEmail}</Text>
               <View style={styles.kycBadge}>
-                <Text style={styles.kycText}>✓ KYC Verified Participant</Text>
+                <Text style={styles.kycText}>✓ Verified Participant</Text>
               </View>
             </>
           )}
@@ -130,13 +141,11 @@ export default function ProfileScreen({ navigation }) {
             <Text style={styles.statLabel}>Registered</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{userSubmissions.length}</Text>
+            <Text style={styles.statNumber}>{uniqueSubmissionsMap.size}</Text>
             <Text style={styles.statLabel}>Submissions</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={styles.statNumber}>
-              ₹{Math.round((user?.referralEarnings ?? 0) / 100)}
-            </Text>
+            <Text style={styles.statNumber}>₹{Math.round((user?.referralEarnings ?? 0) / 100)}</Text>
             <Text style={styles.statLabel}>Referrals</Text>
           </View>
           <View style={styles.statBox}>
@@ -145,164 +154,118 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </View>
 
-        {/* 🎬 1. My Video Submissions Section */}
+        {/* Unified My Competitions & Entries */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionHeading}>🎬 My Submitted Videos ({userSubmissions.length})</Text>
+          <Text style={styles.sectionHeading}>My Competitions & Entries</Text>
         </View>
 
-        {userSubmissions.length > 0 ? (
-          userSubmissions.map((sub, idx) => (
-            <View key={sub.id || idx} style={styles.submissionCard}>
-              <View style={styles.subCardTop}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.subCompTitle}>{sub.competitionTitle}</Text>
-                  <Text style={styles.subCategoryText}>
-                    {sub.competitionCategory || 'Dance Competition'}
-                  </Text>
-                </View>
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusBadgeText}>✓ {sub.status || 'Submitted'}</Text>
-                </View>
-              </View>
+        {activeEntries.length > 0 ? (
+          activeEntries.map((item) => {
+            const sub = item.submission;
+            const cleanFileName = sub?.fileName && sub.fileName !== 'performance_video.mp4'
+              ? sub.fileName
+              : (item.title ? `${item.title} Performance.mp4` : 'dance_routine.mp4');
 
-              <View style={styles.subVideoInfoRow}>
-                <View style={styles.subFileBox}>
-                  <Text style={styles.subFileIcon}>🎥</Text>
-                  <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Text style={styles.subFileName} numberOfLines={1}>
-                      {sub.fileName && sub.fileName !== 'performance_video.mp4' ? sub.fileName : (sub.competitionTitle ? `${sub.competitionTitle} Entry.mp4` : 'My Performance.mp4')}
-                    </Text>
-                    <Text style={styles.subFileMeta}>
-                      {sub.fileSize && sub.fileSize !== '34.8 MB' && sub.fileSize !== '35.0 MB' ? `${sub.fileSize} • ` : ''}{(() => {
-                        if (!sub.submittedAt) return 'Today';
-                        try {
-                          const d = new Date(sub.submittedAt);
-                          if (!isNaN(d.getTime())) {
-                            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                          }
-                        } catch (e) {}
-                        return sub.submittedAt;
-                      })()}
+            const formattedDate = (() => {
+              if (!sub?.submittedAt) return 'Today';
+              try {
+                const d = new Date(sub.submittedAt);
+                if (!isNaN(d.getTime())) {
+                  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                }
+              } catch (e) {}
+              return sub.submittedAt;
+            })();
+
+            return (
+              <View key={item.id} style={styles.cleanCard}>
+                <View style={styles.cleanCardHeader}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={styles.cleanCardTitle}>{item.title}</Text>
+                    <Text style={styles.cleanCardSubtitle}>{item.category} • Prize Pool: ₹{item.prizePool?.toLocaleString('en-IN')}</Text>
+                  </View>
+                  <View style={sub ? styles.badgeSubmitted : styles.badgeRegistered}>
+                    <Text style={sub ? styles.badgeTextSubmitted : styles.badgeTextRegistered}>
+                      {sub ? '✓ Submitted' : '✓ Registered'}
                     </Text>
                   </View>
                 </View>
 
-                {/* Watch Video Button */}
-                <TouchableOpacity
-                  style={styles.vlcPlaySubmissionBtn}
-                  onPress={() => handlePlaySubmissionVideo(sub)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.vlcPlaySubmissionIcon}>▶</Text>
-                  <Text style={styles.vlcPlaySubmissionText}>Watch Video</Text>
-                </TouchableOpacity>
-              </View>
+                {sub ? (
+                  <View style={styles.videoPreviewRow}>
+                    <View style={styles.videoInfoLeft}>
+                      <Text style={styles.videoIcon}>🎥</Text>
+                      <View style={{ flex: 1, marginLeft: 8 }}>
+                        <Text style={styles.videoTitleText} numberOfLines={1}>{cleanFileName}</Text>
+                        <Text style={styles.videoMetaText}>
+                          {sub.fileSize && sub.fileSize !== '34.8 MB' && sub.fileSize !== '35.0 MB' ? `${sub.fileSize} • ` : ''}{formattedDate}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.watchVideoBtn}
+                      onPress={() => handlePlaySubmissionVideo(sub)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.watchVideoIcon}>▶</Text>
+                      <Text style={styles.watchVideoText}>Watch Video</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
 
-              <View style={styles.subActionsFooter}>
-                <TouchableOpacity
-                  style={styles.subFooterLink}
-                  onPress={() =>
-                    navigation?.navigate('CompetitionDetails', {
-                      competitionId: sub.competitionSlug || 'feedants-classical-dance',
-                    })
-                  }
-                >
-                  <Text style={styles.subFooterLinkText}>View Competition Page →</Text>
-                </TouchableOpacity>
+                <View style={styles.cleanCardFooter}>
+                  <TouchableOpacity
+                    style={styles.footerLink}
+                    onPress={() => navigation?.navigate('CompetitionDetails', { competitionId: item.slug })}
+                  >
+                    <Text style={styles.footerLinkText}>View Contest Details →</Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.subResubmitBtn}
-                  onPress={() =>
-                    navigation?.navigate('CompetitionDetails', {
-                      competitionId: sub.competitionSlug || 'feedants-classical-dance',
-                      openSubmission: true,
-                    })
-                  }
-                >
-                  <Text style={styles.subResubmitText}>Resubmit Video</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))
-        ) : (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>🎬</Text>
-            <Text style={styles.emptyTitle}>No video submissions yet</Text>
-            <Text style={styles.emptySubtext}>
-              Once you register for a competition and upload your video performance, your submitted entry will appear here.
-            </Text>
-          </View>
-        )}
-
-        {/* 🏆 2. Active Registrations Section */}
-        <Text style={[styles.sectionHeading, { marginTop: spacing(4) }]}>
-          🏆 My Registered Competitions
-        </Text>
-        {registeredCount > 0 ? (
-          registeredComps.map((comp) => (
-            <TouchableOpacity
-              key={comp.id || comp.slug}
-              style={styles.compCard}
-              onPress={() =>
-                navigation?.navigate('CompetitionDetails', {
-                  competitionId: comp.slug || comp.id,
-                })
-              }
-              activeOpacity={0.85}
-            >
-              <View style={styles.compCardHeader}>
-                <Text style={styles.compCardTitle}>{comp.title}</Text>
-                <View style={styles.registeredPill}>
-                  <Text style={styles.registeredText}>✓ Registered</Text>
+                  <TouchableOpacity
+                    style={styles.footerActionBtn}
+                    onPress={() => navigation?.navigate('CompetitionDetails', { competitionId: item.slug, openSubmission: true })}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.footerActionText}>
+                      {sub ? 'Resubmit Video' : 'Upload Video'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-              <Text style={styles.compCardSub}>
-                {comp.category} • Prize Pool: ₹{comp.prizePool?.toLocaleString('en-IN')}
-              </Text>
-              <Text style={styles.viewLink}>View Competition & Submit Video →</Text>
-            </TouchableOpacity>
-          ))
+            );
+          })
         ) : (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No active registrations</Text>
-            <Text style={styles.emptySub}>You have not registered for any competitions yet.</Text>
+            <Text style={styles.emptyIcon}>🏆</Text>
+            <Text style={styles.emptyTitle}>No active entries yet</Text>
+            <Text style={styles.emptySub}>Explore live competitions and submit your performance.</Text>
             <TouchableOpacity
               style={styles.exploreBtn}
               onPress={() => navigation?.navigate('Explore')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
-              <Text style={styles.exploreBtnText}>Browse Live Competitions</Text>
+              <Text style={styles.exploreBtnText}>Browse Competitions</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* 🔐 3. Account & Authentication Section */}
-        <Text style={[styles.sectionHeading, { marginTop: spacing(4) }]}>
-          🔐 Account & Authentication
-        </Text>
-        <View style={styles.authCard}>
-          <View style={styles.authCardHeader}>
-            <View style={styles.authStatusBadge}>
-              <Text style={styles.authStatusDot}>●</Text>
-              <Text style={styles.authStatusText}>Active Session: {displayEmail}</Text>
-            </View>
+        {/* Account Section */}
+        <View style={[styles.sectionHeaderRow, { marginTop: spacing(4) }]}>
+          <Text style={styles.sectionHeading}>Account</Text>
+        </View>
+
+        <View style={styles.cleanAccountCard}>
+          <View style={styles.accountInfoRow}>
+            <View style={styles.accountStatusDot} />
+            <Text style={styles.accountEmailText} numberOfLines={1}>{displayEmail}</Text>
           </View>
-          <View style={styles.authButtonsRow}>
-            <TouchableOpacity
-              style={styles.authActionBtn}
-              onPress={() => navigation?.navigate('Auth', { mode: 'signin' })}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.authActionBtnText}>Sign In / Switch Account</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.authActionBtn, styles.authActionBtnSecondary]}
-              onPress={() => navigation?.navigate('Auth', { mode: 'signup' })}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.authActionBtnSecondaryText}>Create New Account</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.accountSwitchBtn}
+            onPress={() => navigation?.navigate('Auth', { mode: 'signin' })}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.accountSwitchText}>Switch Account</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={{ height: 40 }} />
@@ -538,171 +501,185 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing(2.5),
   },
-  submissionCard: {
+  cleanCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: radius.lg,
+    borderRadius: radius.lg || 16,
     padding: spacing(4),
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
-    marginBottom: spacing(3),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  subCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing(2.5),
-  },
-  subCompTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  subCategoryText: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 1,
-  },
-  statusBadge: {
-    backgroundColor: '#ECFDF5',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: '#6EE7B7',
-  },
-  statusBadgeText: {
-    fontSize: 10.5,
-    fontWeight: '800',
-    color: '#047857',
-  },
-  subVideoInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: radius.md,
-    padding: spacing(2.5),
     borderWidth: 1,
     borderColor: '#E2E8F0',
     marginBottom: spacing(3),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cleanCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing(3),
+  },
+  cleanCardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: -0.2,
+  },
+  cleanCardSubtitle: {
+    fontSize: 11.5,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  badgeSubmitted: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 10,
+    paddingVertical: 3.5,
+    borderRadius: radius.pill || 999,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  badgeTextSubmitted: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#047857',
+  },
+  badgeRegistered: {
+    backgroundColor: '#F0FDFA',
+    paddingHorizontal: 10,
+    paddingVertical: 3.5,
+    borderRadius: radius.pill || 999,
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+  },
+  badgeTextRegistered: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0D9488',
+  },
+  videoPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: radius.md || 10,
+    padding: spacing(2.5),
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    marginBottom: spacing(3),
     gap: 8,
   },
-  subFileBox: {
+  videoInfoLeft: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  subFileIcon: {
+  videoIcon: {
     fontSize: 20,
   },
-  subFileName: {
-    fontSize: 12,
+  videoTitleText: {
+    fontSize: 12.5,
     fontWeight: '700',
     color: colors.text,
   },
-  subFileMeta: {
-    fontSize: 10,
+  videoMetaText: {
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
   },
-  vlcPlaySubmissionBtn: {
+  watchVideoBtn: {
     backgroundColor: colors.primary || '#004D40',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: radius.md || 8,
     gap: 5,
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.18,
     shadowRadius: 4,
     elevation: 2,
   },
-  vlcPlaySubmissionIcon: {
+  watchVideoIcon: {
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
   },
-  vlcPlaySubmissionText: {
+  watchVideoText: {
     color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 11.5,
+    fontWeight: '700',
   },
-  subActionsFooter: {
+  cleanCardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: '#F8FAFC',
     paddingTop: spacing(2),
   },
-  subFooterLink: {
-    paddingVertical: 2,
+  footerLink: {
+    paddingVertical: 4,
   },
-  subFooterLinkText: {
-    fontSize: 11.5,
+  footerLinkText: {
+    fontSize: 12,
     fontWeight: '700',
     color: '#0284C7',
   },
-  subResubmitBtn: {
+  footerActionBtn: {
     backgroundColor: '#F1F5F9',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  footerActionText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  cleanAccountCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: radius.lg || 16,
+    padding: spacing(3.5),
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing(3),
+  },
+  accountInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  accountStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#16A34A',
+    marginRight: 8,
+  },
+  accountEmailText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  accountSwitchBtn: {
+    backgroundColor: '#F8FAFC',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#CBD5E1',
   },
-  subResubmitText: {
-    fontSize: 11,
+  accountSwitchText: {
+    fontSize: 11.5,
     fontWeight: '700',
     color: colors.textSecondary,
-  },
-  compCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: radius.md,
-    padding: spacing(3.5),
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: spacing(2.5),
-  },
-  compCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  compCardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-    flex: 1,
-    marginRight: spacing(2),
-  },
-  registeredPill: {
-    backgroundColor: '#E6FFFA',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-  },
-  registeredText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#0D9488',
-  },
-  compCardSub: {
-    fontSize: 11.5,
-    color: colors.textMuted,
-    marginBottom: spacing(2),
-  },
-  viewLink: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primary,
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',
@@ -711,6 +688,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  emptyIcon: {
+    fontSize: 28,
+    marginBottom: 8,
   },
   emptyTitle: {
     fontSize: 14,
@@ -869,72 +850,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
-  },
-  authCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: radius.lg,
-    padding: spacing(4),
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: spacing(3),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  authCardHeader: {
-    marginBottom: spacing(3),
-  },
-  authStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0FDF4',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-  },
-  authStatusDot: {
-    color: '#16A34A',
-    fontSize: 10,
-    marginRight: 6,
-  },
-  authStatusText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#15803D',
-  },
-  authButtonsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  authActionBtn: {
-    flex: 1,
-    backgroundColor: '#004D40',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  authActionBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  authActionBtnSecondary: {
-    backgroundColor: '#E6FFFA',
-    borderWidth: 1,
-    borderColor: '#0D9488',
-  },
-  authActionBtnSecondaryText: {
-    color: '#004D40',
-    fontSize: 12,
-    fontWeight: '800',
-    textAlign: 'center',
   },
 });
