@@ -58,7 +58,16 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const handlePlaySubmissionVideo = (sub) => {
-    let finalUri = sub.mediaUrl || sub.videoUrl;
+    let localUrl = null;
+    if (typeof window !== 'undefined' && window?.localStorage) {
+      try {
+        localUrl =
+          window.localStorage.getItem(`feedants_sub_url_${sub.competitionId || sub.competitionSlug || 'featured'}`) ||
+          window.localStorage.getItem('feedants_last_submission_url');
+      } catch (e) {}
+    }
+
+    let finalUri = sub.mediaUrl || sub.videoUrl || localUrl;
     if (!finalUri) {
       finalUri = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
     }

@@ -99,6 +99,13 @@ export async function uploadSubmission(competitionId, { mediaUrl, mediaType = 'v
     }
   }
 
+  if (typeof window !== 'undefined' && window?.localStorage && finalUrl) {
+    try {
+      window.localStorage.setItem(`feedants_sub_url_${competitionId}`, finalUrl);
+      window.localStorage.setItem('feedants_last_submission_url', finalUrl);
+    } catch (e) {}
+  }
+
   const { data } = await client.post(`/competitions/${competitionId}/submissions`, {
     mediaUrl: finalUrl,
     caption: [title, description].filter(Boolean).join('\n') || undefined,

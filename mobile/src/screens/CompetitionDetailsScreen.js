@@ -111,6 +111,12 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
   const handleModalSubmit = async (submissionData) => {
     try {
       setBusyAction('SUBMITTING');
+      if (typeof window !== 'undefined' && window?.localStorage && submissionData.mediaUrl) {
+        try {
+          window.localStorage.setItem(`feedants_sub_url_${competitionId || 'featured'}`, submissionData.mediaUrl);
+          window.localStorage.setItem('feedants_last_submission_url', submissionData.mediaUrl);
+        } catch (e) {}
+      }
       await submitMutation.mutateAsync({
         mediaUrl: submissionData.mediaUrl,
         mediaType: submissionData.mediaType,
@@ -291,9 +297,20 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
               <TouchableOpacity
                 style={styles.mySubPlayBtn}
                 onPress={() => {
+                  let localSub = null;
+                  if (typeof window !== 'undefined' && window?.localStorage) {
+                    try {
+                      localSub =
+                        window.localStorage.getItem(`feedants_sub_url_${competitionId || 'featured'}`) ||
+                        window.localStorage.getItem(`feedants_sub_url_${competition?.id || competition?.slug}`) ||
+                        window.localStorage.getItem('feedants_last_submission_url');
+                    } catch (e) {}
+                  }
+
                   let subUrl =
                     competition?.viewer?.submission?.mediaUrl ||
                     competition?.viewer?.submission?.videoUrl ||
+                    localSub ||
                     competition?.user?.submission?.mediaUrl ||
                     competition?.user?.submission?.videoUrl ||
                     competition?.submission?.mediaUrl;
