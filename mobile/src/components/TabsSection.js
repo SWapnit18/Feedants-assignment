@@ -141,8 +141,10 @@ export default function TabsSection({ about, judgingParameters, rulesAndEligibil
               key={tab.key}
               style={styles.tabButton}
               onPress={() => {
-                setActiveTab(tab.key);
-                setExpanded(false);
+                React.startTransition(() => {
+                  setActiveTab(tab.key);
+                  setExpanded(false);
+                });
               }}
               activeOpacity={0.7}
             >

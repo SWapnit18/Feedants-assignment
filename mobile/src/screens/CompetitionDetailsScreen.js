@@ -80,14 +80,17 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
   );
 
   const handleAction = async (actionType) => {
-    if (actionType === 'REGISTER') {
-      setRegistrationModalVisible(true);
-    } else if (actionType === 'SUBMIT' || actionType === 'RESUBMIT') {
-      setSubmissionModalVisible(true);
-    } else if (actionType === 'VIEW_RESULTS') {
-      showToast('🏆 Winners announced on the Leaderboard tab!');
-    }
+    React.startTransition(() => {
+      if (actionType === 'REGISTER') {
+        setRegistrationModalVisible(true);
+      } else if (actionType === 'SUBMIT' || actionType === 'RESUBMIT') {
+        setSubmissionModalVisible(true);
+      } else if (actionType === 'VIEW_RESULTS') {
+        showToast('🏆 Winners announced on the Leaderboard tab!');
+      }
+    });
   };
+
 
   const handleConfirmRegistration = async (paymentMethod) => {
     try {
@@ -130,18 +133,20 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
   };
 
   const handleBottomNav = (tabKey) => {
-    setActiveBottomNavTab(tabKey);
-    if (tabKey === 'home') {
-      navigation?.navigate('Home');
-    } else if (tabKey === 'explore') {
-      navigation?.navigate('Explore');
-    } else if (tabKey === 'create') {
-      navigation?.navigate('Create');
-    } else if (tabKey === 'profile') {
-      navigation?.navigate('Profile');
-    } else if (tabKey === 'competitions') {
-      setActiveBottomNavTab('competitions');
-    }
+    React.startTransition(() => {
+      setActiveBottomNavTab(tabKey);
+      if (tabKey === 'home') {
+        navigation?.navigate('Home');
+      } else if (tabKey === 'explore') {
+        navigation?.navigate('Explore');
+      } else if (tabKey === 'create') {
+        navigation?.navigate('Create');
+      } else if (tabKey === 'profile') {
+        navigation?.navigate('Profile');
+      } else if (tabKey === 'competitions') {
+        setActiveBottomNavTab('competitions');
+      }
+    });
   };
 
   // Loading State

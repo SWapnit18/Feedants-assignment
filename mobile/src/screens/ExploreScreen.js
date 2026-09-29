@@ -95,7 +95,11 @@ export default function ExploreScreen({ navigation }) {
             <TouchableOpacity
               key={cat}
               style={[styles.filterPill, activeCategory === cat && styles.filterPillActive]}
-              onPress={() => setActiveCategory(cat)}
+              onPress={() => {
+                React.startTransition(() => {
+                  setActiveCategory(cat);
+                });
+              }}
               activeOpacity={0.8}
             >
               <Text style={[styles.filterText, activeCategory === cat && styles.filterTextActive]}>
@@ -164,8 +168,10 @@ export default function ExploreScreen({ navigation }) {
             <TouchableOpacity
               style={styles.resetFilterBtn}
               onPress={() => {
-                setActiveCategory('All');
-                setSearchQuery('');
+                React.startTransition(() => {
+                  setActiveCategory('All');
+                  setSearchQuery('');
+                });
               }}
             >
               <Text style={styles.resetFilterText}>Clear Filters</Text>

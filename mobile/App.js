@@ -99,19 +99,23 @@ export default function App() {
   const navigate = useCallback((screenName, params = {}) => {
     // Normalize aliases
     const target = screenName === 'Competitions' ? 'CompetitionDetails' : screenName;
-    setRouteParams(params);
-    setHistory((prev) => {
-      if (prev[prev.length - 1] === target) return prev;
-      return [...prev, target];
+    React.startTransition(() => {
+      setRouteParams(params);
+      setHistory((prev) => {
+        if (prev[prev.length - 1] === target) return prev;
+        return [...prev, target];
+      });
     });
   }, []);
 
   const goBack = useCallback(() => {
-    setHistory((prev) => {
-      if (prev.length > 1) {
-        return prev.slice(0, prev.length - 1);
-      }
-      return prev;
+    React.startTransition(() => {
+      setHistory((prev) => {
+        if (prev.length > 1) {
+          return prev.slice(0, prev.length - 1);
+        }
+        return prev;
+      });
     });
   }, []);
 
