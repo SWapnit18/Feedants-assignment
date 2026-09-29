@@ -171,13 +171,17 @@ export default function SubmissionModal({
 
   const processSelectedFile = (file) => {
     const objectUrl = URL.createObjectURL(file);
-    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
-    const cleanName = file.name;
+    const sizeBytes = file.size || 0;
+    const formattedSize = sizeBytes > 1024 * 1024
+      ? `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`
+      : `${(sizeBytes / 1024).toFixed(1)} KB`;
+    const cleanName = file.name || 'performance.mp4';
 
     setSelectedVideo({
       name: cleanName,
-      size: `${sizeMb} MB`,
-      duration: '03:30',
+      size: formattedSize,
+      sizeBytes: sizeBytes,
+      duration: '00:00',
       url: objectUrl,
       file: file,
       isUserUploaded: true,
@@ -210,17 +214,20 @@ export default function SubmissionModal({
       return;
     }
 
+    const realFileName = selectedVideo.name || selectedVideo.file?.name || 'performance.mp4';
+    const realFileSize = selectedVideo.size || (selectedVideo.file?.size ? (selectedVideo.file.size > 1024*1024 ? `${(selectedVideo.file.size / (1024*1024)).toFixed(1)} MB` : `${(selectedVideo.file.size/1024).toFixed(1)} KB`) : '15.0 MB');
+
     setCurrentStep(3);
     onSubmit({
-      title: performanceTitle.trim() || (currentLang === 'हिंदी' ? 'फीडएंट्स नृत्य प्रस्तुति' : 'Feedants Performance Entry'),
+      title: performanceTitle.trim() || realFileName.replace(/\.[^/.]+$/, ''),
       description: description.trim(),
       mediaUrl: selectedVideo.url,
       videoUrl: selectedVideo.url,
-      videoFileName: selectedVideo.name || 'performance.mp4',
-      fileName: selectedVideo.name || 'performance.mp4',
-      fileSize: selectedVideo.size || '34.8 MB',
-      duration: selectedVideo.duration || '03:30',
-      videoName: selectedVideo.name || 'performance.mp4',
+      videoFileName: realFileName,
+      fileName: realFileName,
+      fileSize: realFileSize,
+      duration: selectedVideo.duration || '00:00',
+      videoName: realFileName,
       file: selectedVideo.file,
       mediaType: 'video',
     });

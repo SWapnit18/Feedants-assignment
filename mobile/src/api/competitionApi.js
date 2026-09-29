@@ -84,6 +84,7 @@ export async function uploadSubmission(competitionId, { mediaUrl, videoUrl, medi
 
   let finalUrl = videoUrl || mediaUrl;
   let finalFileName = videoFileName || fileName || (file && file.name) || 'performance_video.mp4';
+  let finalFileSize = fileSize || (file && file.size ? (file.size > 1024 * 1024 ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` : `${(file.size / 1024).toFixed(1)} KB`) : null);
 
   // If local file is uploaded via FormData
   if (file && (file.uri || file instanceof Blob || typeof File !== 'undefined' && file instanceof File)) {
@@ -93,9 +94,18 @@ export async function uploadSubmission(competitionId, { mediaUrl, videoUrl, medi
       const { data: uploadData } = await client.post('/uploads', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      finalUrl = unwrap(uploadData).url;
+      const uploadRes = unwrap(uploadData);
+      if (uploadRes?.url) {
+        finalUrl = uploadRes.url;
+      }
+      if (uploadRes?.fileSize) {
+        finalFileSize = uploadRes.fileSize;
+      }
+      if (uploadRes?.fileName) {
+        finalFileName = uploadRes.fileName;
+      }
     } catch (uploadError) {
-      console.warn('Upload failed (likely Vercel read-only FS). Falling back to local blob URL.', uploadError);
+      console.warn('Upload failed. Falling back to local URL.', uploadError);
       finalUrl = videoUrl || mediaUrl; // Fallback to local Blob URL so it plays in the current session
     }
   }
@@ -112,7 +122,7 @@ export async function uploadSubmission(competitionId, { mediaUrl, videoUrl, medi
     videoUrl: finalUrl,
     videoFileName: finalFileName,
     fileName: finalFileName,
-    fileSize,
+    fileSize: finalFileSize,
     title,
     description,
     caption: [title, description].filter(Boolean).join('\n') || undefined,

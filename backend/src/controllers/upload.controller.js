@@ -8,11 +8,16 @@ const { AppError } = require('../utils/AppError');
 async function upload(req, res) {
   if (!req.file) throw new AppError('VALIDATION_ERROR', 'Multipart field "file" is required');
 
+  const sizeBytes = req.file.size || req.file.buffer?.length || 0;
+  const formattedSize = sizeBytes > 1024 * 1024
+    ? `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`
+    : `${(sizeBytes / 1024).toFixed(1)} KB`;
+
   const media = await MediaFile.create({
-    filename: req.file.originalname || 'video.mp4',
+    filename: req.file.originalname || 'performance.mp4',
     contentType: req.file.mimetype || 'video/mp4',
     data: req.file.buffer,
-    size: req.file.size || req.file.buffer.length,
+    size: sizeBytes,
     uploadedBy: req.user?.id || null,
   });
 
@@ -20,7 +25,9 @@ async function upload(req, res) {
   res.status(201).json({
     url: `${base}/api/v1/uploads/${media._id}`,
     mimeType: media.contentType,
-    size: media.size,
+    size: sizeBytes,
+    fileSize: formattedSize,
+    fileName: req.file.originalname || 'performance.mp4',
     id: String(media._id),
   });
 }

@@ -173,7 +173,16 @@ export default function ProfileScreen({ navigation }) {
                       {sub.fileName || 'performance_video.mp4'}
                     </Text>
                     <Text style={styles.subFileMeta}>
-                      {sub.fileSize || '34.8 MB'} • {sub.submittedAt || 'Today'}
+                      {sub.fileSize ? `${sub.fileSize} • ` : ''}{(() => {
+                        if (!sub.submittedAt) return 'Today';
+                        try {
+                          const d = new Date(sub.submittedAt);
+                          if (!isNaN(d.getTime())) {
+                            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                          }
+                        } catch (e) {}
+                        return sub.submittedAt;
+                      })()}
                     </Text>
                   </View>
                 </View>

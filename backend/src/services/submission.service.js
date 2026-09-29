@@ -54,7 +54,7 @@ async function createSubmission(userId, idOrSlug, payload) {
         videoUrl: finalVideoUrl,
         videoFileName: finalFileName,
         fileName: finalFileName,
-        fileSize: payload.fileSize || '34.8 MB',
+        fileSize: payload.fileSize || (payload.size ? (payload.size > 1024 * 1024 ? `${(payload.size / (1024 * 1024)).toFixed(1)} MB` : `${(payload.size / 1024).toFixed(1)} KB`) : null),
         title: payload.title || null,
         description: payload.description || null,
         caption: finalCaption,

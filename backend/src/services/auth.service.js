@@ -153,7 +153,7 @@ async function getUser(userId) {
       videoUrl: s.videoUrl || s.mediaUrl,
       fileName: finalName,
       videoFileName: finalName,
-      fileSize: s.fileSize || '34.8 MB',
+      fileSize: s.fileSize || '',
       submittedAt: formattedDate,
     };
   });
