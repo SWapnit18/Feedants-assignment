@@ -140,7 +140,15 @@ async function getUser(userId) {
       } catch (e) {}
     }
 
-    const finalName = s.videoFileName || s.fileName || (s.title ? `${s.title}.mp4` : 'performance_video.mp4');
+    let finalName = s.videoFileName || s.fileName || (s.title ? `${s.title}.mp4` : 'performance.mp4');
+    if (finalName === 'performance_video.mp4') {
+      finalName = compTitle ? `${compTitle} Entry.mp4` : 'performance.mp4';
+    }
+
+    let finalFileSize = s.fileSize || '';
+    if (finalFileSize === '34.8 MB' || finalFileSize === '35.0 MB') {
+      finalFileSize = '';
+    }
 
     return {
       id: String(s._id),
@@ -153,7 +161,7 @@ async function getUser(userId) {
       videoUrl: s.videoUrl || s.mediaUrl,
       fileName: finalName,
       videoFileName: finalName,
-      fileSize: s.fileSize || '',
+      fileSize: finalFileSize,
       submittedAt: formattedDate,
     };
   });

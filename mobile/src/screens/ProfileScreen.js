@@ -170,10 +170,10 @@ export default function ProfileScreen({ navigation }) {
                   <Text style={styles.subFileIcon}>🎥</Text>
                   <View style={{ flex: 1, marginLeft: 8 }}>
                     <Text style={styles.subFileName} numberOfLines={1}>
-                      {sub.fileName || 'performance_video.mp4'}
+                      {sub.fileName && sub.fileName !== 'performance_video.mp4' ? sub.fileName : (sub.competitionTitle ? `${sub.competitionTitle} Entry.mp4` : 'My Performance.mp4')}
                     </Text>
                     <Text style={styles.subFileMeta}>
-                      {sub.fileSize ? `${sub.fileSize} • ` : ''}{(() => {
+                      {sub.fileSize && sub.fileSize !== '34.8 MB' && sub.fileSize !== '35.0 MB' ? `${sub.fileSize} • ` : ''}{(() => {
                         if (!sub.submittedAt) return 'Today';
                         try {
                           const d = new Date(sub.submittedAt);

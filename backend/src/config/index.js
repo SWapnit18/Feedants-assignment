@@ -18,6 +18,7 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   HOST: z.string().default('0.0.0.0'),
   MONGODB_URI: z.string().optional(),
+  MONGO_URI: z.string().optional(),
   JWT_SECRET: z.string().min(16).optional(),
   JWT_EXPIRES_IN: z.string().default('7d'),
   ENABLE_DEV_LOGIN: bool(true),
@@ -68,7 +69,7 @@ module.exports = Object.freeze({
   isTest,
   port: env.PORT,
   host: env.HOST,
-  mongoUri: env.MONGODB_URI || null,
+  mongoUri: env.MONGODB_URI || env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGO_URI || null,
   jwt: {
     secret: env.JWT_SECRET || 'dev-only-insecure-jwt-secret-change-me',
     expiresIn: env.JWT_EXPIRES_IN,
