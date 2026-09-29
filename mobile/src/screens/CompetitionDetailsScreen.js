@@ -13,7 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 
-import { useCompetitionDetails, useRegister, useUploadSubmission } from '../hooks/useCompetitionDetails';
+import { useCompetitionDetails, useRegister, useUploadSubmission, useMySubmission } from '../hooks/useCompetitionDetails';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import { fetchReviews } from '../api/competitionApi';
 import { computeServerOffsetMs } from '../utils/dateUtils';
 import { t } from '../utils/i18n';
@@ -40,7 +41,9 @@ import EnhancedVideoPlayer from '../components/EnhancedVideoPlayer';
 
 export default function CompetitionDetailsScreen({ route, navigation }) {
   const competitionId = route?.params?.competitionId;
+  const { user: currentUser } = useCurrentUser();
   const { data: competition, isLoading, isError, refetch } = useCompetitionDetails(competitionId);
+  const { data: mySubmission } = useMySubmission(competitionId || competition?.id || competition?.slug);
 
   const { data: reviews = [] } = useQuery({
     queryKey: ['reviews', competitionId || competition?.slug],
@@ -61,12 +64,20 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
   const [policyModalVisible, setPolicyModalVisible] = useState(false);
   const [activePolicyType, setActivePolicyType] = useState('refund');
   const [toastMessage, setToastMessage] = useState(null);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [submittedVideoPlayback, setSubmittedVideoPlayback] = useState(null);
 
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 4000);
   };
+
+  // Reset state when competition changes (Requirement #6)
+  useEffect(() => {
+    setSelectedSubmission(null);
+    setSubmittedVideoPlayback(null);
+    setSubmissionModalVisible(false);
+  }, [competitionId]);
 
   useEffect(() => {
     if (route?.params?.openSubmission) {
@@ -111,21 +122,35 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
   const handleModalSubmit = async (submissionData) => {
     try {
       setBusyAction('SUBMITTING');
-      if (typeof window !== 'undefined' && window?.localStorage && submissionData.mediaUrl) {
-        try {
-          window.localStorage.setItem(`feedants_sub_url_${competitionId || 'featured'}`, submissionData.mediaUrl);
-          window.localStorage.setItem('feedants_last_submission_url', submissionData.mediaUrl);
-        } catch (e) {}
-      }
-      await submitMutation.mutateAsync({
+      const res = await submitMutation.mutateAsync({
         mediaUrl: submissionData.mediaUrl,
+        videoUrl: submissionData.videoUrl || submissionData.mediaUrl,
         mediaType: submissionData.mediaType,
         title: submissionData.title,
         description: submissionData.description,
         file: submissionData.file,
         duration: submissionData.duration,
         videoName: submissionData.videoName,
+        fileName: submissionData.fileName || submissionData.videoName,
+        videoFileName: submissionData.videoFileName || submissionData.videoName,
+        fileSize: submissionData.fileSize,
       });
+
+      if (res?.submission) {
+        setSelectedSubmission(res.submission);
+      } else if (submissionData.mediaUrl) {
+        setSelectedSubmission({
+          competitionId: competitionId || competition?.id,
+          userId: currentUser?.id || currentUser?.user?.id,
+          mediaUrl: submissionData.mediaUrl,
+          videoUrl: submissionData.mediaUrl,
+          videoFileName: submissionData.videoName || 'performance.mp4',
+          fileName: submissionData.videoName || 'performance.mp4',
+          status: 'submitted',
+          submittedAt: new Date().toISOString(),
+        });
+      }
+
       setSubmissionModalVisible(false);
       showToast('🌟 Entry Submitted! Your performance was sent for judging.');
       refetch();
@@ -178,6 +203,8 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
       </SafeAreaView>
     );
   }
+
+  const activeSubmission = selectedSubmission || mySubmission || competition.viewer?.submission;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -273,7 +300,7 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
         <JudgeCard judge={competition.judge} lang={selectedLanguage} />
 
         {/* 🎬 Active Submission Banner if User has Submitted */}
-        {(competition.viewer?.hasSubmission || competition.action?.action === 'RESUBMIT' || competition.action?.label?.toLowerCase().includes('resubmit') || competition.action?.label?.toLowerCase().includes('submitted')) && (
+        {(activeSubmission || competition.viewer?.hasSubmission || competition.action?.action === 'RESUBMIT' || competition.action?.label?.toLowerCase().includes('resubmit') || competition.action?.label?.toLowerCase().includes('submitted')) && (
           <View style={styles.mySubmissionBanner}>
             <View style={styles.mySubHeaderRow}>
               <View style={{ flex: 1 }}>
@@ -297,31 +324,28 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
               <TouchableOpacity
                 style={styles.mySubPlayBtn}
                 onPress={() => {
-                  let localSub = null;
-                  if (typeof window !== 'undefined' && window?.localStorage) {
-                    try {
-                      localSub =
-                        window.localStorage.getItem(`feedants_sub_url_${competitionId || 'featured'}`) ||
-                        window.localStorage.getItem(`feedants_sub_url_${competition?.id || competition?.slug}`) ||
-                        window.localStorage.getItem('feedants_last_submission_url');
-                    } catch (e) {}
-                  }
+                  const sub = activeSubmission;
+                  const targetVideoUrl = sub?.videoUrl || sub?.mediaUrl;
 
-                  let subUrl =
-                    competition?.viewer?.submission?.mediaUrl ||
-                    competition?.viewer?.submission?.videoUrl ||
-                    localSub ||
-                    competition?.user?.submission?.mediaUrl ||
-                    competition?.user?.submission?.videoUrl ||
-                    competition?.submission?.mediaUrl;
+                  console.log("Current Competition:", competitionId || competition?.id);
+                  console.log("Current User:", currentUser?.id || currentUser?.user?.id);
+                  console.log("Submission:", sub);
+                  console.log("Submission Competition:", sub?.competitionId);
+                  console.log("Submission User:", sub?.userId);
+                  console.log("Submission Video:", targetVideoUrl);
+                  console.log("Selected Video:", targetVideoUrl);
 
-                  if (!subUrl) {
-                    subUrl = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+                  if (!targetVideoUrl) {
+                    showToast(selectedLanguage === 'हिंदी' ? 'प्रस्तुत वीडियो अनुपलब्ध है' : 'Submitted video is unavailable');
+                    return;
                   }
 
                   setSubmittedVideoPlayback({
                     title: `${typeof competition.title === 'string' ? competition.title : competition.title?.en || 'Performance Entry'} – My Submission`,
-                    uri: subUrl,
+                    uri: targetVideoUrl,
+                    fileName: sub?.videoFileName || sub?.fileName || 'performance_video.mp4',
+                    status: sub?.status || 'Submitted',
+                    submissionId: sub?.id || sub?.submissionId,
                   });
                 }}
                 activeOpacity={0.85}

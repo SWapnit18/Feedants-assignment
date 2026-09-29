@@ -205,17 +205,24 @@ export default function SubmissionModal({
   };
 
   const handleFinalSubmit = () => {
+    if (!selectedVideo?.url && !selectedVideo?.file) {
+      alert(currentLang === 'हिंदी' ? 'कृपया पहले एक वीडियो चुनें।' : 'Please choose a video to submit.');
+      return;
+    }
+
     setCurrentStep(3);
     onSubmit({
       title: performanceTitle.trim() || (currentLang === 'हिंदी' ? 'फीडएंट्स नृत्य प्रस्तुति' : 'Feedants Performance Entry'),
       description: description.trim(),
-      mediaUrl:
-        selectedVideo?.url ||
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      mediaUrl: selectedVideo.url,
+      videoUrl: selectedVideo.url,
+      videoFileName: selectedVideo.name || 'performance.mp4',
+      fileName: selectedVideo.name || 'performance.mp4',
+      fileSize: selectedVideo.size || '34.8 MB',
+      duration: selectedVideo.duration || '03:30',
+      videoName: selectedVideo.name || 'performance.mp4',
+      file: selectedVideo.file,
       mediaType: 'video',
-      duration: selectedVideo?.duration || '03:30',
-      videoName: selectedVideo?.name || 'performance.mp4',
-      file: selectedVideo?.file,
     });
   };
 

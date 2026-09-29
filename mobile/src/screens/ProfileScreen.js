@@ -67,15 +67,16 @@ export default function ProfileScreen({ navigation }) {
       } catch (e) {}
     }
 
-    let finalUri = sub.mediaUrl || sub.videoUrl || localUrl;
+    let finalUri = sub.videoUrl || sub.mediaUrl || localUrl;
     if (!finalUri) {
-      finalUri = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+      alert('Submitted video is unavailable');
+      return;
     }
     
     setActivePlaybackVideo({
       title: sub.competitionTitle || 'My Performance Entry',
       uri: finalUri,
-      fileName: sub.fileName || 'performance_video.mp4',
+      fileName: sub.videoFileName || sub.fileName || 'performance_video.mp4',
       status: sub.status || 'Submitted',
     });
   };

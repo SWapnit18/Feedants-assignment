@@ -11,9 +11,6 @@ import {
 import { Video } from 'expo-av';
 import { colors, radius, spacing } from '../theme';
 
-const DEFAULT_SAMPLE_VIDEO =
-  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
-
 const SPEED_PRESETS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 
 export default function EnhancedVideoPlayer({
@@ -38,7 +35,7 @@ export default function EnhancedVideoPlayer({
   const videoRef = useRef(null);
   const fullscreenVideoRef = useRef(null);
 
-  const effectiveUri = videoUri || DEFAULT_SAMPLE_VIDEO;
+  const effectiveUri = videoUri;
 
   const getActiveRef = useCallback(() => {
     return isFullscreen ? fullscreenVideoRef.current : videoRef.current;
@@ -106,6 +103,17 @@ export default function EnhancedVideoPlayer({
   const toggleMinimize = () => {
     setIsMinimized((prev) => !prev);
   };
+
+  if (!effectiveUri) {
+    return (
+      <View style={[styles.card, { padding: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', borderRadius: 16 }, style]}>
+        <Text style={{ fontSize: 24, marginBottom: 8 }}>🎬</Text>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, textAlign: 'center' }}>
+          Submitted video stream is currently unavailable.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.card, style]}>

@@ -12,12 +12,13 @@ const SubmissionSchema = new Schema(
 
     mediaUrl: { type: String, required: true },
     videoUrl: { type: String },
+    videoFileName: { type: String },
+    fileName: { type: String },
     mediaType: { type: String, enum: ['video', 'image'], default: 'video' },
 
     title: { type: String, trim: true },
     description: { type: String, trim: true },
     caption: { type: String, trim: true },
-    fileName: { type: String },
     fileSize: { type: String },
     submittedAt: { type: Date, default: Date.now },
 
@@ -48,6 +49,11 @@ SubmissionSchema.pre('save', function(next) {
     this.videoUrl = this.mediaUrl;
   } else if (this.videoUrl && !this.mediaUrl) {
     this.mediaUrl = this.videoUrl;
+  }
+  if (this.videoFileName && !this.fileName) {
+    this.fileName = this.videoFileName;
+  } else if (this.fileName && !this.videoFileName) {
+    this.videoFileName = this.fileName;
   }
   if (!this.submittedAt) {
     this.submittedAt = this.createdAt || new Date();

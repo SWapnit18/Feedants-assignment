@@ -10,20 +10,38 @@ const { findCompetition, serializeSubmission } = require('./competition.service'
  * Create or update the caller's submission.
  * Handles active registration check with graceful fallback and allows re-submission/updates.
  */
-async function createSubmission(userId, idOrSlug, { mediaUrl, caption }) {
+async function createSubmission(userId, idOrSlug, payload) {
   const competition = await findCompetition(idOrSlug, { projection: 'status dates' });
   const lifecycle = computeLifecycle(competition, new Date());
   if (!lifecycle.submissionOpen) throw new AppError('SUBMISSION_WINDOW_CLOSED', 'Submissions are not open for this competition');
 
   let registration = await Registration.findOne({
-    competitionId: competition._id,
-    userId,
-    status: 'confirmed',
+    $or: [
+      { competitionId: competition._id, userId },
+      { competition: competition._id, user: userId },
+    ],
+    status: { $in: ['confirmed', 'active'] },
   }).lean();
   if (!registration) throw new AppError('NOT_REGISTERED', 'You must complete registration before submitting');
 
+  const finalVideoUrl = payload.videoUrl || payload.mediaUrl;
+  const finalFileName = payload.videoFileName || payload.fileName || 'performance_video.mp4';
+  const finalCaption = payload.caption || [payload.title, payload.description].filter(Boolean).join('\n') || null;
+
+  console.log('[SubmissionService] Upserting submission:', {
+    userId,
+    competitionId: String(competition._id),
+    videoUrl: finalVideoUrl,
+    videoFileName: finalFileName,
+  });
+
   const submission = await Submission.findOneAndUpdate(
-    { competitionId: competition._id, userId },
+    {
+      $or: [
+        { competitionId: competition._id, userId },
+        { competition: competition._id, user: userId },
+      ],
+    },
     {
       $set: {
         competition: competition._id,
@@ -32,11 +50,17 @@ async function createSubmission(userId, idOrSlug, { mediaUrl, caption }) {
         userId,
         registration: registration._id,
         registrationId: registration._id,
-        mediaUrl,
-        videoUrl: mediaUrl,
-        caption: caption ?? null,
-        status: 'received',
+        mediaUrl: finalVideoUrl,
+        videoUrl: finalVideoUrl,
+        videoFileName: finalFileName,
+        fileName: finalFileName,
+        fileSize: payload.fileSize || '34.8 MB',
+        title: payload.title || null,
+        description: payload.description || null,
+        caption: finalCaption,
+        status: 'submitted',
         submittedAt: new Date(),
+        updatedAt: new Date(),
         isLatest: true,
       },
     },
@@ -48,7 +72,22 @@ async function createSubmission(userId, idOrSlug, { mediaUrl, caption }) {
 
 async function getMySubmission(userId, idOrSlug) {
   const competition = await findCompetition(idOrSlug, { projection: '_id' });
-  const submission = await Submission.findOne({ competitionId: competition._id, userId }).lean();
+  const submission = await Submission.findOne({
+    $or: [
+      { competitionId: competition._id, userId },
+      { competition: competition._id, user: userId },
+    ],
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  console.log('[SubmissionService] getMySubmission:', {
+    userId,
+    competitionId: String(competition._id),
+    found: !!submission,
+    videoUrl: submission?.videoUrl || submission?.mediaUrl,
+  });
+
   return { submission: serializeSubmission(submission) };
 }
 

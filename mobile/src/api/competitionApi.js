@@ -78,11 +78,12 @@ export async function registerForCompetition(competitionId, payload = {}) {
   return unwrap(data);
 }
 
-export async function uploadSubmission(competitionId, { mediaUrl, mediaType = 'video', title, description, file, fileName, fileSize }) {
+export async function uploadSubmission(competitionId, { mediaUrl, videoUrl, mediaType = 'video', title, description, file, fileName, videoFileName, fileSize }) {
   if (!competitionId) throw new Error('No competition was selected.');
-  if (!file && !mediaUrl) throw new Error('Select a submission file before continuing.');
+  if (!file && !mediaUrl && !videoUrl) throw new Error('Select a submission file before continuing.');
 
-  let finalUrl = mediaUrl;
+  let finalUrl = videoUrl || mediaUrl;
+  let finalFileName = videoFileName || fileName || (file && file.name) || 'performance_video.mp4';
 
   // If local file is uploaded via FormData
   if (file && (file.uri || file instanceof Blob || typeof File !== 'undefined' && file instanceof File)) {
@@ -95,7 +96,7 @@ export async function uploadSubmission(competitionId, { mediaUrl, mediaType = 'v
       finalUrl = unwrap(uploadData).url;
     } catch (uploadError) {
       console.warn('Upload failed (likely Vercel read-only FS). Falling back to local blob URL.', uploadError);
-      finalUrl = mediaUrl; // Fallback to local Blob URL so it plays in the current session
+      finalUrl = videoUrl || mediaUrl; // Fallback to local Blob URL so it plays in the current session
     }
   }
 
@@ -108,10 +109,26 @@ export async function uploadSubmission(competitionId, { mediaUrl, mediaType = 'v
 
   const { data } = await client.post(`/competitions/${competitionId}/submissions`, {
     mediaUrl: finalUrl,
+    videoUrl: finalUrl,
+    videoFileName: finalFileName,
+    fileName: finalFileName,
+    fileSize,
+    title,
+    description,
     caption: [title, description].filter(Boolean).join('\n') || undefined,
   });
 
   return unwrap(data);
+}
+
+export async function fetchMySubmission(competitionId) {
+  if (!competitionId) return null;
+  try {
+    const { data } = await client.get(`/competitions/${competitionId}/submissions/me`);
+    return unwrap(data)?.submission || null;
+  } catch (err) {
+    return null;
+  }
 }
 
 export async function fetchPreviousWinners(competitionId) {

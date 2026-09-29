@@ -4,6 +4,7 @@ import {
   fetchCompetitionDetails,
   registerForCompetition,
   uploadSubmission,
+  fetchMySubmission,
   createCompetition,
 } from '../api/competitionApi';
 
@@ -48,6 +49,16 @@ export function useRegister(competitionId) {
   });
 }
 
+export function useMySubmission(competitionId) {
+  return useQuery({
+    queryKey: ['mySubmission', competitionId || 'featured'],
+    queryFn: () => fetchMySubmission(competitionId),
+    enabled: !!competitionId,
+    staleTime: 10000,
+    refetchOnWindowFocus: true,
+  });
+}
+
 export function useUploadSubmission(competitionId) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -55,6 +66,8 @@ export function useUploadSubmission(competitionId) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: key(competitionId) });
       queryClient.invalidateQueries({ queryKey: ['competitions'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['mySubmission', competitionId || 'featured'] });
     },
   });
 }
