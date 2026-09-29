@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCompetitionDetails, useRegister, useUploadSubmission, useMySubmission } from '../hooks/useCompetitionDetails';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { fetchReviews } from '../api/competitionApi';
+import { storeSubmissionVideo, retrieveSubmissionVideoUrl } from '../utils/videoStorage';
 import { computeServerOffsetMs } from '../utils/dateUtils';
 import { t } from '../utils/i18n';
 import { colors, radius, spacing } from '../theme';
@@ -122,6 +123,11 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
   const handleModalSubmit = async (submissionData) => {
     try {
       setBusyAction('SUBMITTING');
+      const compKey = competitionId || competition?.id || competition?.slug || 'featured';
+      if (submissionData.file) {
+        await storeSubmissionVideo(compKey, submissionData.file, { name: submissionData.videoName });
+      }
+
       const res = await submitMutation.mutateAsync({
         mediaUrl: submissionData.mediaUrl,
         videoUrl: submissionData.videoUrl || submissionData.mediaUrl,
@@ -323,17 +329,17 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
             <View style={styles.mySubActionsRow}>
               <TouchableOpacity
                 style={styles.mySubPlayBtn}
-                onPress={() => {
+                onPress={async () => {
                   const sub = activeSubmission;
-                  const targetVideoUrl = sub?.videoUrl || sub?.mediaUrl;
+                  const compKey = competitionId || competition?.id || competition?.slug || 'featured';
+                  const localBlobUrl = await retrieveSubmissionVideoUrl(compKey);
+                  const targetVideoUrl = localBlobUrl || sub?.videoUrl || sub?.mediaUrl;
 
-                  console.log("Current Competition:", competitionId || competition?.id);
+                  console.log("Current Competition:", compKey);
                   console.log("Current User:", currentUser?.id || currentUser?.user?.id);
                   console.log("Submission:", sub);
-                  console.log("Submission Competition:", sub?.competitionId);
-                  console.log("Submission User:", sub?.userId);
-                  console.log("Submission Video:", targetVideoUrl);
-                  console.log("Selected Video:", targetVideoUrl);
+                  console.log("Local Blob URL:", localBlobUrl);
+                  console.log("Target Video URL:", targetVideoUrl);
 
                   if (!targetVideoUrl) {
                     showToast(selectedLanguage === 'हिंदी' ? 'प्रस्तुत वीडियो अनुपलब्ध है' : 'Submitted video is unavailable');
