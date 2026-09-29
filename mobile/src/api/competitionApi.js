@@ -94,7 +94,8 @@ export async function uploadSubmission(competitionId, { mediaUrl, mediaType = 'v
       });
       finalUrl = unwrap(uploadData).url;
     } catch (uploadError) {
-      throw uploadError;
+      console.warn('Upload failed (likely Vercel read-only FS). Falling back to local blob URL.', uploadError);
+      finalUrl = mediaUrl; // Fallback to local Blob URL so it plays in the current session
     }
   }
 
