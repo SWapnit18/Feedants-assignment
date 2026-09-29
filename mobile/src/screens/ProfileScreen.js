@@ -58,9 +58,14 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const handlePlaySubmissionVideo = (sub) => {
+    let finalUri = sub.mediaUrl || 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+    if (finalUri.includes('commondatastorage.googleapis.com/gtv-videos-bucket')) {
+      finalUri = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+    }
+    
     setActivePlaybackVideo({
       title: sub.competitionTitle || 'My Performance Entry',
-      uri: sub.mediaUrl || 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+      uri: finalUri,
       fileName: sub.fileName || 'performance_video.mp4',
       status: sub.status || 'Submitted',
     });
