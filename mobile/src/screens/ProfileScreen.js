@@ -60,7 +60,7 @@ export default function ProfileScreen({ navigation }) {
   const handlePlaySubmissionVideo = (sub) => {
     setActivePlaybackVideo({
       title: sub.competitionTitle || 'My Performance Entry',
-      uri: sub.mediaUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      uri: sub.mediaUrl || 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
       fileName: sub.fileName || 'performance_video.mp4',
       status: sub.status || 'Submitted',
     });

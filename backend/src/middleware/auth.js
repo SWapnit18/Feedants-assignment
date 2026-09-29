@@ -31,8 +31,10 @@ function requireAuth(req, res, next) {
  * screen still renders (without personalised state) for logged-out users.
  */
 function optionalAuth(req, res, next) {
-  const payload = decodeToken(req);
-  if (payload) {
+  const header = req.headers.authorization || '';
+  if (header) {
+    const payload = decodeToken(req);
+    if (!payload) throw new AppError('UNAUTHENTICATED', 'Invalid token');
     req.userId = payload.sub;
     req.user = { id: payload.sub };
   }

@@ -27,8 +27,8 @@ function competitionData(overrides = {}) {
     category: overrides.category || 'Dance',
     tags: overrides.tags || [],
     certificate: true,
-    prizePool: overrides.prizePool ?? 1500,
-    entryFee: overrides.entryFee ?? 99,
+    prizePool: overrides.prizePool ?? 150000,
+    entryFee: overrides.entryFee ?? 9900,
     currency: 'INR',
     capacity: overrides.capacity ?? 20,
     bookedCount: overrides.bookedCount ?? 0,
@@ -65,12 +65,20 @@ async function seedDatabase() {
     slug: 'feedants-classical-dance',
     title: { en: 'Feedants Classical Dance', hi: 'फीडेंट्स शास्त्रीय नृत्य' },
     tags: ['Dance', 'Multi-Win'],
-    prizePool: 1500,
-    entryFee: 99,
+    prizePool: 150000,
+    entryFee: 9900,
     capacity: 20,
     bookedCount: 1,
-    rewards: [550, 300, 240, 200, 130, 80].map((amount, index) => ({ position: index + 1, label: { en: `${index + 1} Winner`, hi: `${index + 1} विजेता` }, amount })),
+    rewards: [55000, 30000, 24000, 20000, 13000, 8000].map((amount, index) => ({ position: index + 1, label: { en: `${index + 1} Winner`, hi: `${index + 1} विजेता` }, amount })),
   }));
+
+  await Winner.create([
+    { competitionId: main._id, position: 1, name: 'Aditi', image: 'url1', year: 2025, prize: '₹ 55000' },
+    { competitionId: main._id, position: 2, name: 'Raj', image: 'url2', year: 2025, prize: '₹ 30000' },
+    { competitionId: main._id, position: 3, name: 'Simran', image: 'url3', year: 2025, prize: '₹ 24000' },
+    { competitionId: main._id, position: 4, name: 'Karan', image: 'url4', year: 2025, prize: '₹ 20000' }
+  ]);
+
   await Registration.create({ competitionId: main._id, userId: priya._id, status: 'confirmed', amount: main.entryFee, currency: 'INR', confirmedAt: new Date() });
 
   const full = await Competition.create(competitionData({ slug: 'feedants-bharatanatyam-open', capacity: 20, bookedCount: 20 }));

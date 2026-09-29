@@ -1,18 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, Image } from 'react-native';
+import React from 'react';
+import { View, Text } from 'react-native';
 
-/** Minimal ProfileAvatar — shows first letter of name inside a teal circle. */
+/** Minimal ProfileAvatar — always shows first letter of name inside a teal circle. */
 export default function ProfileAvatar({
   name = '',
-  imageUrl = null,
   size = 40,
   fontSize,
   style,
   textStyle,
   isActive = false,
 }) {
-  const [imageError, setImageError] = useState(false);
-
   const getInitial = () => {
     if (!name || typeof name !== 'string') return 'U';
     const trimmed = name.trim();
@@ -22,23 +19,6 @@ export default function ProfileAvatar({
   const initial = getInitial();
   const calculatedFontSize = fontSize || Math.round(size * 0.42);
   const borderRadius = size / 2;
-  const hasValidImage = Boolean(
-    imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0 && !imageError
-  );
-
-  if (hasValidImage) {
-    return (
-      <Image
-        source={{ uri: imageUrl }}
-        style={[
-          { width: size, height: size, borderRadius, backgroundColor: '#E2E8F0' },
-          isActive && { borderWidth: 2, borderColor: '#0F7C6C' },
-          style,
-        ]}
-        onError={() => setImageError(true)}
-      />
-    );
-  }
 
   return (
     <View
