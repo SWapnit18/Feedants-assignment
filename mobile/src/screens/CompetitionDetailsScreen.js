@@ -293,7 +293,7 @@ export default function CompetitionDetailsScreen({ route, navigation }) {
                 onPress={() =>
                   setSubmittedVideoPlayback({
                     title: `${typeof competition.title === 'string' ? competition.title : competition.title?.en || 'Performance Entry'} – My Submission`,
-                    uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                    uri: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
                   })
                 }
                 activeOpacity={0.85}
