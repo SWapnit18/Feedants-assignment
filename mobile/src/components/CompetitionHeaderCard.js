@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 
 import { CertificateTrophyIcon, UsersOutlineIcon } from './MinimalIcons';
-import { t } from '../utils/i18n';
+import { t, resolveText } from '../utils/i18n';
 
 export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
   const {
@@ -23,7 +23,7 @@ export default function CompetitionHeaderCard({ competition, lang = 'ENG' }) {
   const percentBooked = totalSpots > 0 ? Math.min((spotsBooked / totalSpots) * 100, 100) : 0;
   const currencySymbol = currency === 'INR' ? '₹ ' : '';
 
-  const displayTitle = lang === 'हिंदी' ? t(lang, 'title') : title;
+  const displayTitle = resolveText(title, lang, t(lang, 'title'));
   const displayTags = tags.map((tg) => {
     if (tg.toLowerCase().includes('dance')) return t(lang, 'tagDance');
     if (tg.toLowerCase().includes('multi')) return t(lang, 'tagMultiWin');

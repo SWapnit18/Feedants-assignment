@@ -220,3 +220,19 @@ export function t(lang, key, params = {}) {
   });
   return text;
 }
+
+/**
+ * Safely resolve a field that may be either:
+ *   - a plain string              → returned as-is
+ *   - a localized object {en, hi} → returns the correct locale string
+ *   - null / undefined            → returns fallback
+ */
+export function resolveText(field, lang, fallback = '') {
+  if (field == null) return fallback;
+  if (typeof field === 'string') return field || fallback;
+  if (typeof field === 'object') {
+    if (lang === 'हिंदी') return field.hi || field.en || fallback;
+    return field.en || field.hi || fallback;
+  }
+  return String(field) || fallback;
+}

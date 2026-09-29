@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '../theme';
 
-import { t } from '../utils/i18n';
+import { t, resolveText } from '../utils/i18n';
 
 export default function TabsSection({ about, judgingParameters, rulesAndEligibility, lang = 'ENG' }) {
   const [activeTab, setActiveTab] = useState('about');
@@ -125,7 +125,8 @@ export default function TabsSection({ about, judgingParameters, rulesAndEligibil
     },
   ];
 
-  const aboutText = lang === 'हिंदी' ? t(lang, 'aboutText') : (about || t('ENG', 'aboutText'));
+  const resolvedAbout = resolveText(about, lang);
+  const aboutText = lang === 'हिंदी' ? t(lang, 'aboutText') : (resolvedAbout || t('ENG', 'aboutText'));
   const isLong = aboutText.length > 130;
   const displayAboutText = expanded || !isLong ? aboutText : `${aboutText.slice(0, 130)}...`;
 

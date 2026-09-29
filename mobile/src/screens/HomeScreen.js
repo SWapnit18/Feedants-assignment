@@ -14,6 +14,7 @@ import BottomNavBar from '../components/BottomNavBar';
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useCompetitionDetails, useCompetitions } from '../hooks/useCompetitionDetails';
+import { resolveText } from '../utils/i18n';
 
 export default function HomeScreen({ navigation }) {
   const { user } = useCurrentUser();
@@ -74,9 +75,9 @@ export default function HomeScreen({ navigation }) {
                 </View>
               )}
             </View>
-            <Text style={styles.cardTitle}>{comp?.title || 'Feedants Classical Dance'}</Text>
+            <Text style={styles.cardTitle}>{resolveText(comp?.title, 'ENG', 'Feedants Classical Dance')}</Text>
             <Text style={styles.cardDesc} numberOfLines={3}>
-              {comp?.about || comp?.description || 'Showcase your classical dance skills in this prestigious Feedants competition.'}
+              {resolveText(comp?.about, 'ENG') || resolveText(comp?.description, 'ENG') || 'Showcase your classical dance skills in this prestigious Feedants competition.'}
             </Text>
             <View style={styles.cardFooter}>
               <Text style={styles.prizeText}>
