@@ -27,7 +27,7 @@ router.post(
   upload.single('file'),
   validate([
     param('id').isString().trim().notEmpty(),
-    body('mediaUrl').optional().isURL(),
+    body('mediaUrl').optional().isString(),
     body('mediaType').optional().isIn(['video', 'image']),
   ]),
   uploadSubmission
@@ -39,7 +39,7 @@ router.post(
   upload.single('file'),
   validate([
     param('id').isString().trim().notEmpty(),
-    body('mediaUrl').optional().isURL(),
+    body('mediaUrl').optional().isString(),
     body('mediaType').optional().isIn(['video', 'image']),
   ]),
   uploadSubmission
