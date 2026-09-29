@@ -113,30 +113,48 @@ async function getUser(userId) {
     .sort({ createdAt: -1 })
     .lean();
 
-  const userSubmissions = (rawSubmissions || []).map((s) => {
+  // Deduplicate by competition to only show the latest active entry per contest
+  const uniqueMap = new Map();
+  for (const s of rawSubmissions || []) {
+    const comp = s.competitionId || s.competition || {};
+    const compKey = String(comp._id || s.competitionId || s.competition || 'default');
+    if (!uniqueMap.has(compKey)) {
+      uniqueMap.set(compKey, s);
+    }
+  }
+
+  const userSubmissions = Array.from(uniqueMap.values()).map((s) => {
     const comp = s.competitionId || s.competition || {};
     const compTitle =
       typeof comp.title === 'string'
         ? comp.title
-        : comp.title?.en || s.title || 'Feedants Dance Competition';
+        : comp.title?.en || s.title || 'Feedants Classical Dance';
+
+    let formattedDate = 'Today';
+    if (s.submittedAt || s.createdAt) {
+      try {
+        const d = new Date(s.submittedAt || s.createdAt);
+        if (!isNaN(d.getTime())) {
+          formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+      } catch (e) {}
+    }
+
+    const finalName = s.videoFileName || s.fileName || (s.title ? `${s.title}.mp4` : 'performance_video.mp4');
+
     return {
       id: String(s._id),
-      competitionId: comp._id ? String(comp._id) : undefined,
+      competitionId: comp._id ? String(comp._id) : (s.competitionId ? String(s.competitionId) : 'feedants-classical-dance'),
       competitionSlug: comp.slug || 'feedants-classical-dance',
       competitionTitle: compTitle,
-      competitionCategory: comp.category || 'Dance Competition',
-      status: s.status || 'Submitted',
-      mediaUrl: s.mediaUrl || s.videoUrl,
-      videoUrl: s.mediaUrl || s.videoUrl,
-      fileName: s.fileName || 'performance_video.mp4',
+      competitionCategory: comp.category || 'Classical Dance',
+      status: s.status || 'submitted',
+      mediaUrl: s.videoUrl || s.mediaUrl,
+      videoUrl: s.videoUrl || s.mediaUrl,
+      fileName: finalName,
+      videoFileName: finalName,
       fileSize: s.fileSize || '34.8 MB',
-      submittedAt: s.submittedAt
-        ? new Date(s.submittedAt).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          })
-        : 'Today',
+      submittedAt: formattedDate,
     };
   });
 

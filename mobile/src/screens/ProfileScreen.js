@@ -18,6 +18,7 @@ import ProfileAvatar from '../components/ProfileAvatar';
 import EnhancedVideoPlayer from '../components/EnhancedVideoPlayer';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useCompetitions } from '../hooks/useCompetitionDetails';
+import { retrieveSubmissionVideoUrl } from '../utils/videoStorage';
 
 export default function ProfileScreen({ navigation }) {
   const { user, isLoading, updateUser, isUpdating } = useCurrentUser();
@@ -32,7 +33,7 @@ export default function ProfileScreen({ navigation }) {
   const displayEmail = user?.email || 'user@feedants.dev';
 
   const registeredComps = allComps.filter((c) => c.isRegistered);
-  const registeredCount = registeredComps.length;
+  const registeredCount = user?.registeredCount ?? registeredComps.length;
 
   // Extract real user submissions from backend/database
   const userSubmissions = Array.isArray(user?.submissions) ? user.submissions : [];
@@ -57,17 +58,11 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  const handlePlaySubmissionVideo = (sub) => {
-    let localUrl = null;
-    if (typeof window !== 'undefined' && window?.localStorage) {
-      try {
-        localUrl =
-          window.localStorage.getItem(`feedants_sub_url_${sub.competitionId || sub.competitionSlug || 'featured'}`) ||
-          window.localStorage.getItem('feedants_last_submission_url');
-      } catch (e) {}
-    }
+  const handlePlaySubmissionVideo = async (sub) => {
+    const compKey = sub.competitionId || sub.competitionSlug || 'featured';
+    const localBlobUrl = await retrieveSubmissionVideoUrl(compKey);
+    const finalUri = localBlobUrl || sub.videoUrl || sub.mediaUrl;
 
-    let finalUri = sub.videoUrl || sub.mediaUrl || localUrl;
     if (!finalUri) {
       alert('Submitted video is unavailable');
       return;
