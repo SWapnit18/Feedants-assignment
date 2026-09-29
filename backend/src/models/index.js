@@ -9,4 +9,5 @@ module.exports = {
   Winner: require('./Winner'),
   IdempotencyKey: require('./IdempotencyKey'),
   Referral: require('./Referral'),
+  MediaFile: require('./MediaFile'),
 };

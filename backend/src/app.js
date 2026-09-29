@@ -40,7 +40,7 @@ function createApp() {
   app.use(compression());
   app.use(express.json({ limit: '100kb' }));
 
-  app.use('/uploads', express.static(config.upload.dir, { maxAge: '1d', fallthrough: false, index: false }));
+  app.use('/uploads', require('./routes/uploads.routes'));
   app.use('/api/v1', globalLimiter, apiRoutes);
   app.get('/', (_req, res) => res.json({ name: 'feedants-competition-api', docs: '/api/v1/health' }));
 
